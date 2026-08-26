@@ -1,0 +1,255 @@
+import React, { useState } from 'react';
+import { 
+  Percent, ShieldCheck, ArrowRightLeft, 
+  Sparkles, DollarSign, Receipt, Info, CheckCircle2, ChevronRight, Landmark 
+} from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { ExchangeRateData } from '../types/currency';
+import { ALL_CURRENCIES, CARD_FEE_PRESETS, getCurrencyMeta } from '../data/currencies';
+import { RateService } from '../services/rateService';
+import { calculateBankFeeConversion, formatCurrencyAmount } from '../services/feeCalculator';
+import { StorageService } from '../services/storageService';
+
+interface BankFeeCalculatorTabProps {
+  rateData: ExchangeRateData | null;
+  baseCurrency: string;
+  targetCurrency: string;
+  onSelectBaseCurrency: (code: string) => void;
+  onSelectTargetCurrency: (code: string) => void;
+  bankFeePct: number;
+  onBankFeeChange: (fee: number) => void;
+}
+
+export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
+  rateData,
+  baseCurrency,
+  targetCurrency,
+  onSelectBaseCurrency,
+  onSelectTargetCurrency,
+  bankFeePct,
+  onBankFeeChange
+}) => {
+  const [transactionAmount, setTransactionAmount] = useState<string>('100');
+  const [transactionCurrency, setTransactionCurrency] = useState<string>(targetCurrency || 'EUR');
+  const [cardBillingCurrency, setCardBillingCurrency] = useState<string>(baseCurrency || 'USD');
+
+  const amountNum = parseFloat(transactionAmount) || 0;
+  const transMeta = getCurrencyMeta(transactionCurrency);
+  const billMeta = getCurrencyMeta(cardBillingCurrency);
+
+  const rawRate = rateData
+    ? RateService.calculateRate(transactionCurrency, cardBillingCurrency, rateData)
+    : 1.0;
+
+  const feeResult = calculateBankFeeConversion(
+    amountNum,
+    transactionCurrency,
+    cardBillingCurrency,
+    rawRate,
+    bankFeePct
+  );
+
+  const handleSwapCurrencies = () => {
+    StorageService.triggerHaptic();
+    const temp = transactionCurrency;
+    setTransactionCurrency(cardBillingCurrency);
+    setCardBillingCurrency(temp);
+  };
+
+  const handlePresetSelect = (pct: number) => {
+    StorageService.triggerHaptic();
+    onBankFeeChange(pct);
+    if (pct === 0) {
+      try {
+        confetti({ particleCount: 40, spread: 55, origin: { y: 0.7 } });
+      } catch {}
+    }
+  };
+
+  return (
+    <div className="space-y-4 w-full max-w-2xl mx-auto pb-8">
+      {/* Header Pill Card */}
+      <div className="p-5 rounded-[28px] bg-[#161a26] border border-white/5 shadow-xl flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-[20px] bg-[#E2F163]/15 border border-[#E2F163]/25 flex items-center justify-center text-[#E2F163]">
+            <Percent className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-black text-white tracking-tight">
+              Bank Fee Simulator
+            </h2>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              Wholesale interbank & card network fee calculator
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Inputs Bento Box */}
+      <div className="p-5 rounded-[32px] bg-[#161a26] border border-white/5 shadow-xl space-y-4">
+        {/* Currency Pair Selectors */}
+        <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              Foreign Purchase
+            </label>
+            <select
+              value={transactionCurrency}
+              onChange={(e) => {
+                StorageService.triggerHaptic();
+                setTransactionCurrency(e.target.value);
+              }}
+              className="w-full bg-[#0e111a] border border-white/5 rounded-[18px] px-3 py-2.5 text-xs font-bold text-white focus:outline-none"
+            >
+              {[...ALL_CURRENCIES].sort((a, b) => a.code.localeCompare(b.code)).map((c) => (
+                <option key={'trans-' + c.code} value={c.code}>
+                  {c.flag} {c.code}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={handleSwapCurrencies}
+            className="mt-4 p-2.5 rounded-full bg-[#0e111a] hover:bg-[#1a1f2e] active:scale-90 text-[#E2F163] border border-white/5 transition-all"
+            title="Swap currencies"
+          >
+            <ArrowRightLeft className="w-4 h-4" />
+          </button>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              Card Currency
+            </label>
+            <select
+              value={cardBillingCurrency}
+              onChange={(e) => {
+                StorageService.triggerHaptic();
+                setCardBillingCurrency(e.target.value);
+              }}
+              className="w-full bg-[#0e111a] border border-white/5 rounded-[18px] px-3 py-2.5 text-xs font-bold text-white focus:outline-none"
+            >
+              {[...ALL_CURRENCIES].sort((a, b) => a.code.localeCompare(b.code)).map((c) => (
+                <option key={'bill-' + c.code} value={c.code}>
+                  {c.flag} {c.code}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Transaction Amount Input */}
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+            Purchase Amount ({transMeta.code})
+          </label>
+          <div className="flex items-center bg-[#0e111a] border border-white/5 rounded-[22px] px-4 py-3 focus-within:ring-2 focus-within:ring-amber-500/40">
+            <span className="text-[#E2F163] font-bold text-xl mr-2">{transMeta.symbol}</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={transactionAmount}
+              onChange={(e) => setTransactionAmount(e.target.value)}
+              placeholder="100.00"
+              className="w-full bg-transparent font-mono font-black text-2xl text-white focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Bank Fee Slider & Presets */}
+        <div className="pt-3 border-t border-white/5 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-extrabold text-[#E2F163]">
+              Bank Surcharge Rate:
+            </label>
+            <span className="font-mono font-black text-xs text-[#E2F163] bg-[#E2F163]/15 border border-[#E2F163]/30 px-2.5 py-0.5 rounded-full">
+              {bankFeePct.toFixed(1)}%
+            </span>
+          </div>
+
+          <input
+            type="range"
+            min="0"
+            max="5"
+            step="0.1"
+            value={bankFeePct}
+            onChange={(e) => {
+              StorageService.triggerHaptic();
+              onBankFeeChange(parseFloat(e.target.value));
+            }}
+            className="w-full accent-[#E2F163] h-2 bg-[#0e111a] rounded-lg cursor-pointer"
+          />
+
+          {/* Preset Pills */}
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 pt-1">
+            {CARD_FEE_PRESETS.map((preset) => {
+              const isSelected = Math.abs(bankFeePct - preset.percentage) < 0.05;
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => handlePresetSelect(preset.percentage)}
+                  className={'py-2 rounded-[16px] text-center border transition-all ' + (isSelected ? 'bg-[#E2F163]/20 text-[#E2F163] border-[#E2F163]/40 font-black shadow-sm' : 'bg-[#0e111a] text-slate-300 border-white/5 hover:bg-[#1a1f2e] font-bold')}
+                >
+                  <span className="text-xs block">{preset.percentage}%</span>
+                  <span className="text-[9px] text-slate-400 block truncate">{preset.tag}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Receipt Breakdown Bento Box */}
+      <div className="p-5 rounded-[32px] bg-[#161a26] border border-white/5 shadow-xl space-y-3.5">
+        <div className="flex items-center justify-between pb-2 border-b border-white/5">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-[#E2F163]" />
+            <h3 className="text-sm font-extrabold text-white">Settlement Breakdown</h3>
+          </div>
+          <span className="text-[10px] uppercase font-bold text-[#E2F163] bg-[#0e111a] px-2 py-0.5 rounded-full border border-white/5">
+            Interbank Spec
+          </span>
+        </div>
+
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between items-center text-slate-300">
+            <span>Wholesale Conversion ({transMeta.code} &rarr; {billMeta.code}):</span>
+            <span className="font-mono font-bold text-white">
+              {formatCurrencyAmount(feeResult.convertedBaseAmount, billMeta.decimalPlaces, true, billMeta.symbol)}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center text-[#E2F163] font-semibold">
+            <span>Bank Processing Fee ({bankFeePct.toFixed(1)}%):</span>
+            <span className="font-mono font-bold">
+              +{formatCurrencyAmount(feeResult.bankFeeAmount, billMeta.decimalPlaces, true, billMeta.symbol)}
+            </span>
+          </div>
+
+          <div className="pt-3 border-t border-white/5 flex justify-between items-center">
+            <span className="font-extrabold text-sm text-white">Total Card Charged:</span>
+            <span className="font-mono font-black text-2xl text-emerald-400">
+              {formatCurrencyAmount(feeResult.totalBilledAmount, billMeta.decimalPlaces, true, billMeta.symbol)}
+            </span>
+          </div>
+
+          {/* Effective Rates Sub-card */}
+          <div className="mt-2 p-3 rounded-[20px] bg-[#0e111a] border border-white/5 text-[11px] text-slate-300 space-y-1 font-mono">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Effective Rate (with fee):</span>
+              <span className="font-bold text-white">
+                1 {transMeta.code} = {feeResult.effectiveRate < 0.01 ? feeResult.effectiveRate.toFixed(6) : feeResult.effectiveRate.toFixed(4)} {billMeta.code}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Cardholder Reciprocal:</span>
+              <span className="font-bold text-white">
+                1 {billMeta.code} = {feeResult.reverseEffectiveRate < 0.01 ? feeResult.reverseEffectiveRate.toFixed(6) : feeResult.reverseEffectiveRate.toFixed(4)} {transMeta.code}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

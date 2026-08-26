@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+android/app/build/
+android/.gradle/
+android/build/
+android/captures/
+android/lint/
+android/*.iml
+android/local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Capacitor generated
+android/capacitor-cordova-android-plugins/
+android/capacitor.settings.gradle
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Gradle
+*.class
+*.log
+*.apk
+*.aab
+*.dex
+*.jar
+!android/app/build/intermediates/apk/debug/app-debug.apk
