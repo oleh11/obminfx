@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Floating Squircle Ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1F2636"
+        android:strokeWidth="4"
+        android:pathData="M54,20 C73,20 88,35 88,54 C88,73 73,88 54,88 C35,88 20,73 20,54 C20,35 35,20 54,20 Z" />
+
+    <!-- Minimalist Geometric Trident-Prism (Crisp White & Neon Lime Accent) -->
+    <!-- Center Column -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M51,32 L57,32 L57,68 L51,68 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,27 L58.5,32 L49.5,32 Z" />
+
+    <!-- Left Wing -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M41,39 C41,39 41,58 46,64 L50,64 C45,58 45,43 45,39 L41,39 Z" />
+
+    <!-- Right Wing -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M67,39 C67,39 67,58 62,64 L58,64 C63,58 63,43 63,39 L67,39 Z" />
+
+    <!-- Base Anchor -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,67 L64,67 L60,76 L48,76 Z" />
+
+    <!-- Sleek Diia-Lime Dynamic FX Accent Arc -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#D4FF00"
+        android:strokeWidth="3.5"
+        android:pathData="M30,46 C34,34 43,26 54,26" />
+
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="3.5"
+        android:pathData="M78,62 C74,74 65,82 54,82" />
+</vector>

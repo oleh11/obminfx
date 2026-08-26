@@ -1,0 +1,45 @@
+Categories:
+  - Money
+License: MIT
+AuthorName: Oleh Antonyuk
+AuthorEmail: oleh@rvisory.com
+SourceCode: https://github.com/oleh11/obminfx
+IssueTracker: https://github.com/oleh11/obminfx/issues
+Donate:
+  Bitcoin: bc1qyourbitcoinaddress
+
+AutoName: ObminFX
+Summary: Currency converter with bank fee calculator
+Description: |
+  ObminFX is a modern multi-source currency converter and bank fee calculator
+  for Android. It pulls live exchange rates from the ECB, Mastercard, the
+  National Bank of Ukraine, CurrencyLayer, and open market sources.
+
+  Features:
+  * 165+ currencies including crypto and precious metals
+  * Real bank fee modeling — see what your card really charges
+  * Historical charts and trends
+  * Fully offline with baseline fallback rates
+  * Dark-themed Material You design
+
+RepoType: git
+Repo: https://github.com/oleh11/obminfx.git
+
+Builds:
+  - versionName: '1.0.0'
+    versionCode: 1
+    commit: v1.0.0
+    subdir: android
+    gradle:
+      - ../local.properties
+    build:
+      - cd ..
+      - npm install
+      - npx cap sync android
+    output: app/build/outputs/apk/release/app-release-unsigned.apk
+    srclibs: []
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.0.0'
+CurrentVersionCode: 1

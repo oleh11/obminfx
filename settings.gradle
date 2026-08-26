@@ -1,0 +1,16 @@
+rootProject.name = 'currency-converter-app'
+
+// Include the main app module
+include ':app'
+project(':app').projectDir = new File('android/app')
+
+// Include Capacitor core library from node_modules
+include ':capacitor-android'
+project(':capacitor-android').projectDir = new File('node_modules/@capacitor/android/capacitor')
+
+// Include Capacitor plugins
+include ':capacitor-cordova-android-plugins'
+project(':capacitor-cordova-android-plugins').projectDir = new File('android/capacitor-cordova-android-plugins/')
+
+// Replicate logic from capacitor.settings.gradle if any other plugins exist
+// For now, we manually include the ones we found.

@@ -1,0 +1,25 @@
+// Top-level build file for the root project.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:9.3.2'
+        classpath 'com.google.gms:google-services:4.4.4'
+    }
+}
+
+// Apply variables from the android directory so they are available to subprojects
+apply from: "android/variables.gradle"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
