@@ -4,6 +4,12 @@
 
 Modern multi-source currency converter with bank processing fee calculations for Android and web.
 
+## 📥 Download
+
+[**Download ObminFX APK v1.0.0**](https://github.com/oleh11/obminfx/releases/download/v1.0.0/ObminFX.apk) (4.1 MB)
+
+On Android, enable **Install from unknown sources** or **Install from your browser** in settings, then download and open the APK. No Play Store account needed.
+
 ## Features
 
 - **Real-time exchange rates** from multiple sources (ECB, Mastercard, NBU, CurrencyLayer, Open Market)
