@@ -1,4 +1,4 @@
-package com.currencyconverter.app;
+package com.obminfx.app;
 
 import com.getcapacitor.BridgeActivity;
 

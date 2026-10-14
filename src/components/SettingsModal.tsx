@@ -1,6 +1,7 @@
 import React from 'react';
 import { StorageService } from '../services/storageService';
-import { Percent, ShieldAlert, Info, X } from 'lucide-react';
+import { Percent, ShieldAlert, Info, X, ArrowRightLeft } from 'lucide-react';
+import { getCurrencyMeta } from '../data/currencies';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface SettingsModalProps {
   onToggleTheme: () => void;
   onClose: () => void;
   onResetDefaults: () => void;
+  onOpenSelectBaseModal?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -23,9 +25,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   theme,
   onToggleTheme,
   onClose,
-  onResetDefaults
+  onResetDefaults,
+  onOpenSelectBaseModal
 }) => {
   if (!isOpen) return null;
+
+  const baseMeta = getCurrencyMeta(baseCurrency);
 
   return (
     <div 
@@ -55,6 +60,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Settings Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Default Base Currency Configuration */}
+          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                <ArrowRightLeft className="w-4 h-4 text-[#D4FF00]" />
+                Default Base Currency
+              </h3>
+              <button
+                onClick={() => {
+                  StorageService.triggerHaptic();
+                  onClose();
+                  onOpenSelectBaseModal?.();
+                }}
+                className="text-xs font-bold text-[#D4FF00] hover:underline"
+              >
+                Change
+              </button>
+            </div>
+            <div 
+              onClick={() => {
+                StorageService.triggerHaptic();
+                onClose();
+                onOpenSelectBaseModal?.();
+              }}
+              className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between cursor-pointer hover:border-[#D4FF00]/40 transition-colors"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">{baseMeta.flag}</span>
+                <div>
+                  <span className="font-extrabold text-sm text-white">{baseMeta.code}</span>
+                  <span className="text-xs text-slate-400 ml-1.5">{baseMeta.name}</span>
+                </div>
+              </div>
+              <span className="text-xs font-mono font-bold text-[#D4FF00]">
+                {baseMeta.symbol}
+              </span>
+            </div>
+          </div>
+
           {/* Bank Fee Configuration */}
           <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between">

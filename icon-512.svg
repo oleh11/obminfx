@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#182030"/>
+      <stop offset="100%" stop-color="#0B0E14"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  
+  <!-- Background Baseplate (512x512 Google Play specification) -->
+  <rect width="512" height="512" fill="url(#bgGlow)" rx="96"/>
+  
+  <!-- Outer Floating Squircle Ring -->
+  <rect x="76" y="76" width="360" height="360" rx="72" fill="#141924" stroke="#222B3D" stroke-width="6" filter="url(#shadow)"/>
+  
+  <!-- Minimalist Geometric Trident-Prism (Crisp Pure White) -->
+  <!-- Center Column & Spearhead -->
+  <path d="M242 165 L270 165 L270 330 L242 330 Z" fill="#FFFFFF"/>
+  <polygon points="256,138 278,165 234,165" fill="#FFFFFF"/>
+
+  <!-- Left Wing -->
+  <path d="M196 200 C196 200 196 280 218 308 L238 308 C216 280 216 220 216 200 Z" fill="#FFFFFF"/>
+  <polygon points="196,195 216,210 196,225" fill="#FFFFFF"/>
+
+  <!-- Right Wing -->
+  <path d="M316 200 C316 200 316 280 294 308 L274 308 C296 280 296 220 296 200 Z" fill="#FFFFFF"/>
+  <polygon points="316,195 296,210 316,225" fill="#FFFFFF"/>
+
+  <!-- Base Pedestal -->
+  <polygon points="212,325 300,325 284,365 228,365" fill="#FFFFFF"/>
+
+  <!-- Dynamic FX Currency Orbit Curves -->
+  <!-- Neon Lime Orbit -->
+  <path d="M140 230 C155 170 200 135 256 135" fill="none" stroke="#D4FF00" stroke-width="14" stroke-linecap="round"/>
+  
+  <!-- Amber Gold Orbit -->
+  <path d="M372 282 C357 342 312 377 256 377" fill="none" stroke="#F59E0B" stroke-width="14" stroke-linecap="round"/>
+</svg>

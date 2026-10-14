@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.currencyconverter.app",
+  appId: "com.obminfx.app",
   appName: "ObminFX",
   webDir: "dist",
   server: {

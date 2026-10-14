@@ -3,6 +3,7 @@ node_modules/
 
 # Build outputs
 dist/
+build/
 android/app/build/
 android/.gradle/
 android/build/
@@ -30,6 +31,7 @@ android/capacitor.settings.gradle
 .env.*.local
 
 # Gradle
+.gradle/
 *.class
 *.log
 *.apk
@@ -37,3 +39,7 @@ android/capacitor.settings.gradle
 *.dex
 *.jar
 !android/app/build/intermediates/apk/debug/app-debug.apk
+
+# Temporary render files
+*-render.html
+showcase-*.html
