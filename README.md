@@ -53,7 +53,7 @@
 
 ### 🏛️ Official Central Bank & Market Rates
 - **Official Benchmarks:** Direct live rates from the **European Central Bank (ECB)** and **National Bank of Ukraine (NBU)**.
-- **Market & Card Networks:** Real-time data from global open markets and Mastercard FX benchmarks.
+- **Market & Card Networks:** Real-time data from global open markets, Mastercard FX benchmarks, and Visa FX benchmarks.
 - **Zero Commercial Bank Bloat:** Pure, transparent interbank exchange rates with no hidden retail markups.
 
 ### 💳 Smart Bank Fee & Surcharge Simulator

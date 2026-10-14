@@ -46,7 +46,9 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
       case 'nbu':
         return <Globe className="w-5 h-5 text-[#E2F163]" />;
       case 'mastercard':
-        return <CreditCard className="w-5 h-5 text-yellow-400" />;
+        return <CreditCard className="w-5 h-5 text-amber-400" />;
+      case 'visa':
+        return <CreditCard className="w-5 h-5 text-blue-400" />;
       case 'currencylayer':
         return <Layers className="w-5 h-5 text-[#E2F163]" />;
       case 'custom_bank':
@@ -72,7 +74,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
               Exchange Rate Sources
             </h2>
             <p className="text-xs text-slate-400 font-medium mt-0.5">
-              ECB, NBU, Mastercard FX & Global Open Market rates
+              ECB, NBU, Mastercard, Visa & Global Open Market rates
             </p>
           </div>
         </div>
@@ -134,6 +136,8 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
               rate = RateService.calculateRate(compareBase, compareTarget, rateData);
               if (source.id === 'mastercard') {
                 rate = rate * 1.0022;
+              } else if (source.id === 'visa') {
+                rate = rate * 1.0025;
               } else if (source.id === 'custom_bank') {
                 const spread = parseFloat(customSpread) || 1.5;
                 rate = rate * (1 + spread / 100);

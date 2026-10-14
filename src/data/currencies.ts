@@ -173,6 +173,16 @@ export const AVAILABLE_SOURCES: RateSource[] = [
     color: "amber"
   },
   {
+    id: "visa",
+    name: "Visa FX Benchmark",
+    shortName: "Visa FX",
+    description: "Official Visa wholesale settlement exchange rates with global card network interbank spreads for cross-border card transactions.",
+    badge: "Card Network Rate",
+    updateFrequency: "Daily Network Fixing",
+    isOfficial: true,
+    color: "blue"
+  },
+  {
     id: "currencylayer",
     name: "Currencylayer Real-Time",
     shortName: "Currencylayer",

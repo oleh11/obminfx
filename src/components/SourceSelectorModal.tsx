@@ -34,6 +34,10 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
         return <Globe className="w-5 h-5 text-indigo-400" />;
       case 'mastercard':
         return <CreditCard className="w-5 h-5 text-amber-400" />;
+      case 'visa':
+        return <CreditCard className="w-5 h-5 text-blue-400" />;
+      case 'nbu':
+        return <Globe className="w-5 h-5 text-emerald-400" />;
       case 'crypto_metals':
         return <Sparkles className="w-5 h-5 text-purple-400" />;
       case 'custom_bank':
