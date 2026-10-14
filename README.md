@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/oleh11/obminfx/releases/latest"><img src="https://img.shields.io/badge/Release-v1.0.0-D4FF00?style=for-the-badge&logo=android&logoColor=black" alt="Release" /></a>
+  <a href="https://github.com/oleh11/obminfx/releases/latest"><img src="https://img.shields.io/badge/Release-v2.0.0-D4FF00?style=for-the-badge&logo=android&logoColor=black" alt="Release" /></a>
   <a href="https://github.com/oleh11/obminfx/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-white?style=for-the-badge" alt="License" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" /></a>
   <a href="https://capacitorjs.com/"><img src="https://img.shields.io/badge/Capacitor-8-119EFF?style=for-the-badge&logo=capacitor&logoColor=white" alt="Capacitor" /></a>
@@ -33,7 +33,7 @@
 
 | Distribution | Format | Link |
 | :--- | :--- | :--- |
-| **Direct APK** | `.apk` (v1.0.0) | [**Download ObminFX Release APK**](https://github.com/oleh11/obminfx/releases/download/v1.0.0/app-release.apk) |
+| **Direct APK** | `.apk` (v2.0.0) | [**Download ObminFX Release APK**](https://github.com/oleh11/obminfx/releases/download/v2.0.0/app-release.apk) |
 | **Play Store Bundle** | `.aab` (Production) | Built with package `com.obminfx.app` & signed with RSA-2048 key |
 
 > **Android Sideloading Note:** If downloading the APK directly, enable *"Install from unknown sources"* or *"Install from this source"* in your Android Settings.
