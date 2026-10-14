@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   ArrowRightLeft, Plus, Trash2, Check, Copy, 
-  TrendingUp, Percent, Star, Sparkles, ChevronRight, Clock, ShieldCheck 
+  TrendingUp, Percent, Star, Sparkles, ChevronRight, ChevronDown, Clock, ShieldCheck 
 } from 'lucide-react';
 import { ExchangeRateData } from '../types/currency';
 import { getCurrencyMeta } from '../data/currencies';
@@ -19,6 +19,7 @@ interface ConverterTabProps {
   favoriteCurrencies: string[];
   onToggleFavorite: (code: string) => void;
   onOpenAddModal: () => void;
+  onOpenSelectBaseModal: () => void;
   onOpenSourceModal: () => void;
   rateData: ExchangeRateData | null;
   bankFeePct: number;
@@ -38,6 +39,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
   favoriteCurrencies,
   onToggleFavorite,
   onOpenAddModal,
+  onOpenSelectBaseModal,
   onOpenSourceModal,
   rateData,
   bankFeePct,
@@ -96,21 +98,23 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
 
         {/* Currency & Fee Selectors */}
         <div className="flex items-center justify-between gap-2 mb-4">
+          {/* Default/Base Currency Switcher Button */}
           <button
             onClick={() => {
               StorageService.triggerHaptic();
-              onOpenAddModal();
+              onOpenSelectBaseModal();
             }}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-[22px] bg-[#0d1017] hover:bg-[#1a1f2e] active:scale-98 border border-white/10 text-white transition-all shadow-sm"
+            className="flex items-center gap-3 px-4 py-2.5 rounded-[22px] bg-[#0d1017] hover:bg-[#1a1f2e] active:scale-98 border border-white/10 hover:border-[#D4FF00]/40 text-white transition-all shadow-sm group"
+            title="Change default base currency"
           >
             <span className="text-2xl">{baseMeta.flag}</span>
             <div className="text-left">
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-base text-slate-100">{baseMeta.code}</span>
-                <ArrowRightLeft className="w-3.5 h-3.5 text-[#D4FF00]" />
+                <span className="font-black text-base text-slate-100 group-hover:text-[#D4FF00] transition-colors">{baseMeta.code}</span>
+                <ChevronDown className="w-4 h-4 text-[#D4FF00] transition-transform group-hover:translate-y-0.5" />
               </div>
               <span className="text-[11px] text-slate-400 font-medium block truncate max-w-[140px]">
-                {baseMeta.country}
+                {baseMeta.country} &bull; Tap to change
               </span>
             </div>
           </button>
@@ -239,23 +243,44 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
             >
               {/* Card Header */}
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-[20px] bg-[#0d1017] border border-white/10 flex items-center justify-center text-2xl shadow-inner">
+                <div 
+                  className="flex items-center gap-3.5 cursor-pointer group"
+                  onClick={() => {
+                    StorageService.triggerHaptic();
+                    onSelectBaseCurrency(code);
+                  }}
+                  title={'Click to set ' + code + ' as default base currency'}
+                >
+                  <div className="w-12 h-12 rounded-[20px] bg-[#0d1017] border border-white/10 group-hover:border-[#D4FF00]/40 flex items-center justify-center text-2xl shadow-inner transition-colors">
                     {meta.flag}
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-lg text-white tracking-tight">{meta.code}</span>
+                      <span className="font-extrabold text-lg text-white group-hover:text-[#D4FF00] tracking-tight transition-colors">{meta.code}</span>
                       <span className="text-xs text-[#D4FF00] font-mono font-bold">({meta.symbol})</span>
                       {isFavorite && (
                         <Star className="w-3.5 h-3.5 fill-[#D4FF00] text-[#D4FF00] ml-0.5" />
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 font-medium">{meta.name}</p>
+                    <p className="text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors">
+                      {meta.name}
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1">
+                  {/* Make Base Currency Quick Action Button */}
+                  <button
+                    onClick={() => {
+                      StorageService.triggerHaptic();
+                      onSelectBaseCurrency(code);
+                    }}
+                    className="p-2 rounded-full text-slate-400 hover:text-[#D4FF00] hover:bg-[#D4FF00]/10 transition-colors"
+                    title={'Set ' + code + ' as default base currency'}
+                  >
+                    <ArrowRightLeft className="w-4 h-4" />
+                  </button>
+
                   <button
                     onClick={() => {
                       StorageService.triggerHaptic();

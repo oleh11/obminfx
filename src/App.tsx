@@ -6,6 +6,7 @@ import { HistoricalChartsTab } from './components/HistoricalChartsTab';
 import { SourcesTab } from './components/SourcesTab';
 import { BottomNavigation, AppTabType } from './components/BottomNavigation';
 import { AddCurrencyModal } from './components/AddCurrencyModal';
+import { SelectBaseCurrencyModal } from './components/SelectBaseCurrencyModal';
 import { SourceSelectorModal } from './components/SourceSelectorModal';
 import { SettingsModal } from './components/SettingsModal';
 import { RateService } from './services/rateService';
@@ -17,6 +18,7 @@ export const App: React.FC = () => {
   // Navigation & Modal states
   const [activeTab, setActiveTab] = useState<AppTabType>('converter');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState<boolean>(false);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
 
@@ -75,13 +77,18 @@ export const App: React.FC = () => {
   };
 
   const handleSelectBaseCurrency = (code: string) => {
+    if (code === baseCurrency) return;
+    const oldBase = baseCurrency;
     setBaseCurrency(code);
     StorageService.setBaseCurrency(code);
-    if (!pinnedCurrencies.includes(code)) {
-      const updated = [code, ...pinnedCurrencies];
-      setPinnedCurrencies(updated);
-      StorageService.setPinnedCurrencies(updated);
+
+    // Remove the new base from the converted list, and ensure the old base stays available
+    let updated = pinnedCurrencies.filter(c => c !== code);
+    if (!updated.includes(oldBase)) {
+      updated = [oldBase, ...updated];
     }
+    setPinnedCurrencies(updated);
+    StorageService.setPinnedCurrencies(updated);
   };
 
   const handleTogglePinnedCurrency = (code: string) => {
@@ -151,6 +158,7 @@ export const App: React.FC = () => {
             favoriteCurrencies={favoriteCurrencies}
             onToggleFavorite={handleToggleFavorite}
             onOpenAddModal={() => setIsAddModalOpen(true)}
+            onOpenSelectBaseModal={() => setIsSelectBaseModalOpen(true)}
             onOpenSourceModal={() => setIsSourceModalOpen(true)}
             rateData={rateData}
             bankFeePct={bankFeePct}
@@ -215,6 +223,15 @@ export const App: React.FC = () => {
         availableCurrencies={RateService.getAvailableCurrenciesFromRates(rateData)}
       />
 
+      <SelectBaseCurrencyModal
+        isOpen={isSelectBaseModalOpen}
+        onClose={() => setIsSelectBaseModalOpen(false)}
+        currentBaseCurrency={baseCurrency}
+        onSelectBaseCurrency={handleSelectBaseCurrency}
+        favoriteCurrencies={favoriteCurrencies}
+        availableCurrencies={RateService.getAvailableCurrenciesFromRates(rateData)}
+      />
+
       <SourceSelectorModal
         isOpen={isSourceModalOpen}
         onClose={() => setIsSourceModalOpen(false)}
@@ -235,6 +252,7 @@ export const App: React.FC = () => {
         onToggleTheme={() => {}}
         onClose={() => setIsSettingsModalOpen(false)}
         onResetDefaults={handleResetDefaults}
+        onOpenSelectBaseModal={() => setIsSelectBaseModalOpen(true)}
       />
     </div>
   );

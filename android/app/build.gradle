@@ -1,10 +1,16 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.currencyconverter.app"
+    namespace = "com.obminfx.app"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    buildFeatures {
+        resValues = true
+        buildConfig = true
+    }
+
     defaultConfig {
-        applicationId "com.currencyconverter.app"
+        applicationId "com.obminfx.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -16,8 +22,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (file("C:/Users/oleha/obminfx-release-key.jks").exists()) {
+                storeFile file("C:/Users/oleha/obminfx-release-key.jks")
+                storePassword "ObminFX2026!"
+                keyAlias "obminfx"
+                keyPassword "ObminFX2026!"
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (file("C:/Users/oleha/obminfx-release-key.jks").exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
