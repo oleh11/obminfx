@@ -156,7 +156,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <strong>ObminFX</strong> (from Ukrainian <em>Обмін</em> • Exchange) is a modern Android currency converter & bank fee calculator built with Material Design 3 guidelines.
             </p>
             <p className="text-[11px] text-slate-400">
-              Supports live European Central Bank (ECB) benchmarks, National Bank of Ukraine (NBU) rates, Mastercard FX settlement spreads, and custom bank fee calculations.
+              Supports live European Central Bank (ECB) benchmarks, National Bank of Ukraine (NBU) rates, Mastercard & Visa FX settlement spreads, and custom bank fee calculations.
             </p>
           </div>
         </div>

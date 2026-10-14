@@ -10,8 +10,8 @@ export interface Currency {
   decimalPlaces: number;
 }
 
-// Added Currencylayer and National Bank of Ukraine (NBU) as new RateSourceIds
-export type RateSourceId = 'ecb' | 'open_market' | 'mastercard' | 'crypto_metals' | 'custom_bank' | 'currencylayer' | 'nbu';
+// Added Currencylayer, National Bank of Ukraine (NBU), and Visa as RateSourceIds
+export type RateSourceId = 'ecb' | 'open_market' | 'mastercard' | 'visa' | 'crypto_metals' | 'custom_bank' | 'currencylayer' | 'nbu';
 
 export interface RateSource {
   id: RateSourceId;

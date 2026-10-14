@@ -58,6 +58,7 @@ export class RateService {
     ecb: null,
     open_market: null,
     mastercard: null,
+    visa: null,
     crypto_metals: null,
     custom_bank: null,
     currencylayer: null,
@@ -113,6 +114,9 @@ export class RateService {
           break;
         case 'mastercard':
           freshData = await this.fetchMastercardBenchmarkRates();
+          break;
+        case 'visa':
+          freshData = await this.fetchVisaBenchmarkRates();
           break;
         case 'crypto_metals':
           freshData = await this.fetchCryptoAndMetalsRates();
@@ -236,6 +240,40 @@ export class RateService {
       timestamp: Date.now(),
       source: 'mastercard',
       rates: mcRates
+    };
+  }
+
+  /**
+   * Visa FX Benchmark simulation
+   * Simulates official Visa card network settlement rates incorporating interbank network wholesale spread
+   */
+  private static async fetchVisaBenchmarkRates(): Promise<ExchangeRateData> {
+    let baseRates: Record<string, number> = { ...BASELINE_RATES_USD };
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/USD');
+      if (res.ok) {
+        const d = await res.json();
+        if (d.rates) baseRates = { ...baseRates, ...d.rates };
+      }
+    } catch {}
+
+    const visaRates: Record<string, number> = {};
+    for (const [curr, rate] of Object.entries(baseRates)) {
+      if (curr === 'USD') {
+        visaRates[curr] = 1.0;
+      } else {
+        // Visa card scheme wholesale FX spread is typically between 0.18% to 0.38% (0.25% network benchmark)
+        const networkSpread = 1 + (0.0025);
+        visaRates[curr] = rate * networkSpread;
+      }
+    }
+
+    return {
+      base: 'USD',
+      date: new Date().toISOString().split('T')[0],
+      timestamp: Date.now(),
+      source: 'visa',
+      rates: visaRates
     };
   }
 
