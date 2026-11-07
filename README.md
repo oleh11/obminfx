@@ -37,7 +37,7 @@
 | **Direct APK** | [**Download the latest ObminFX.apk**](https://github.com/oleh11/obminfx/releases/latest/download/ObminFX.apk) |
 | **Obtainium** (auto-updates from GitHub) | [**Add to Obtainium**](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/oleh11/obminfx) |
 | **Google Play** | Launching soon. **Help us get there:** join the [tester group](https://groups.google.com/g/obminfx-testers), then [opt in to the beta](https://play.google.com/apps/testing/com.obminfx.app). |
-| **IzzyOnDroid / F-Droid** | Submitted, coming soon |
+| **F-Droid** | [Requested](https://gitlab.com/fdroid/rfp/-/work_items/4749), coming soon |
 
 > **Sideloading:** if you install the APK directly, allow *"Install from this source"* when Android asks.
 
