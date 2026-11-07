@@ -25,6 +25,8 @@ export const App: React.FC = () => {
   // App core conversion states
   const [baseCurrency, setBaseCurrency] = useState<string>(() => StorageService.getBaseCurrency() || 'USD');
   const [targetCurrency, setTargetCurrency] = useState<string>(() => StorageService.getTargetCurrency() || 'UAH');
+  // Pair opened from a converter card; doesn't change the saved base currency
+  const [trendsPair, setTrendsPair] = useState<{ from: string; to: string } | null>(null);
   const [baseAmount, setBaseAmount] = useState<string>('100.00');
   const [bankFeePct, setBankFeePct] = useState<number>(() => StorageService.getBankFeePct());
   const [activeSourceId, setActiveSourceId] = useState<RateSourceId>(() => StorageService.getActiveSource());
@@ -91,6 +93,16 @@ export const App: React.FC = () => {
     StorageService.setPinnedCurrencies(updated);
   };
 
+  const handleSelectTargetCurrency = (code: string) => {
+    setTargetCurrency(code);
+    StorageService.setTargetCurrency(code);
+  };
+
+  const handleTabChange = (tab: AppTabType) => {
+    setTrendsPair(null);
+    setActiveTab(tab);
+  };
+
   const handleTogglePinnedCurrency = (code: string) => {
     let updated: string[];
     if (pinnedCurrencies.includes(code)) {
@@ -143,6 +155,7 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
         isOnline={isOnline}
         lastUpdatedTime={lastUpdatedTime}
+        isFallback={!!rateData?.isFallback}
       />
 
       {/* Main Content Area */}
@@ -165,8 +178,7 @@ export const App: React.FC = () => {
             onBankFeeChange={handleBankFeeChange}
             onNavigateToFeeCalc={() => setActiveTab('fee_calculator')}
             onNavigateToTrends={(from, to) => {
-              setBaseCurrency(from);
-              setTargetCurrency(to);
+              setTrendsPair({ from, to });
               setActiveTab('trends');
             }}
             lastUpdatedTime={lastUpdatedTime}
@@ -179,7 +191,7 @@ export const App: React.FC = () => {
             baseCurrency={baseCurrency}
             targetCurrency={targetCurrency}
             onSelectBaseCurrency={setBaseCurrency}
-            onSelectTargetCurrency={setTargetCurrency}
+            onSelectTargetCurrency={handleSelectTargetCurrency}
             bankFeePct={bankFeePct}
             onBankFeeChange={handleBankFeeChange}
           />
@@ -187,8 +199,8 @@ export const App: React.FC = () => {
 
         {activeTab === 'trends' && (
           <HistoricalChartsTab
-            initialFrom={baseCurrency || 'USD'}
-            initialTo={targetCurrency || 'UAH'}
+            initialFrom={trendsPair?.from || baseCurrency || 'USD'}
+            initialTo={trendsPair?.to || targetCurrency || 'UAH'}
           />
         )}
 
@@ -208,7 +220,7 @@ export const App: React.FC = () => {
       {/* Bottom Navigation */}
       <BottomNavigation
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         bankFeePct={bankFeePct}
       />
 

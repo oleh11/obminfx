@@ -10,6 +10,7 @@ import {
 import { HistoricalDataSummary } from "../types/currency";
 import { ALL_CURRENCIES, getCurrencyMeta } from "../data/currencies";
 import { RateService } from "../services/rateService";
+import { formatRate } from "../services/feeCalculator";
 import { StorageService } from "../services/storageService";
 
 interface HistoricalChartsTabProps {
@@ -37,6 +38,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
       setChartData(data);
     } catch (e) {
       console.warn("Failed to load historical chart data", e);
+      setChartData(null);
     } finally {
       setLoading(false);
     }
@@ -162,7 +164,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             </div>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="font-mono font-black text-3xl text-white">
-                {chartData ? (chartData.currentRate < 0.01 ? chartData.currentRate.toFixed(6) : chartData.currentRate.toFixed(4)) : "---"}
+                {chartData ? formatRate(chartData.currentRate) : "---"}
               </span>
               <span className="text-xs font-bold text-amber-400">{toMeta.symbol}</span>
             </div>
@@ -214,7 +216,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
                         <div className="bg-[#0b101b] border border-white/10 p-2.5 rounded-[16px] shadow-xl text-xs font-mono">
                           <p className="text-slate-400 text-[10px] mb-0.5">{label}</p>
                           <p className="font-black text-amber-400">
-                            1 {fromCurrency} = {val < 0.01 ? val.toFixed(6) : val.toFixed(4)} {toCurrency}
+                            1 {fromCurrency} = {formatRate(val)} {toCurrency}
                           </p>
                         </div>
                       );
@@ -233,8 +235,11 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-500 text-xs">
-              No historical data available
+            <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 text-xs gap-1 px-4">
+              <span>No rate history available for {fromCurrency} / {toCurrency}.</span>
+              <span className="text-[10px] text-slate-600">
+                History comes from ECB data, which doesn't cover every currency (e.g. UAH), crypto or metals.
+              </span>
             </div>
           )}
         </div>
@@ -245,19 +250,19 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             <div className="p-3 rounded-[20px] bg-[#0e111a] border border-white/5">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">High</span>
               <span className="font-mono text-xs font-black text-emerald-400">
-                {chartData.high < 0.01 ? chartData.high.toFixed(6) : chartData.high.toFixed(4)}
+                {formatRate(chartData.high)}
               </span>
             </div>
             <div className="p-3 rounded-[20px] bg-[#0e111a] border border-white/5">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Low</span>
               <span className="font-mono text-xs font-black text-rose-400">
-                {chartData.low < 0.01 ? chartData.low.toFixed(6) : chartData.low.toFixed(4)}
+                {formatRate(chartData.low)}
               </span>
             </div>
             <div className="p-3 rounded-[20px] bg-[#0e111a] border border-white/5">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Average</span>
               <span className="font-mono text-xs font-black text-amber-300">
-                {chartData.average < 0.01 ? chartData.average.toFixed(6) : chartData.average.toFixed(4)}
+                {formatRate(chartData.average)}
               </span>
             </div>
           </div>

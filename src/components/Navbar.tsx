@@ -12,6 +12,7 @@ interface NavbarProps {
   isRefreshing: boolean;
   isOnline: boolean;
   lastUpdatedTime: Date | null;
+  isFallback?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -21,7 +22,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onRefreshRates,
   isRefreshing,
   isOnline,
-  lastUpdatedTime
+  lastUpdatedTime,
+  isFallback = false
 }) => {
   const currentSource = AVAILABLE_SOURCES.find(s => s.id === activeSourceId) || AVAILABLE_SOURCES[0];
 
@@ -91,9 +93,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {!isOnline && (
+      {!isOnline && !isFallback && (
         <div className="mt-2 py-1 px-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center gap-1.5 text-xs text-amber-300 font-medium animate-pulse">
           <WifiOff className="w-3.5 h-3.5" /> Offline Mode: Using saved exchange rates
+        </div>
+      )}
+      {isFallback && (
+        <div className="mt-2 py-1 px-3 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center gap-1.5 text-xs text-rose-300 font-medium text-center">
+          <WifiOff className="w-3.5 h-3.5 shrink-0" /> Couldn't load rates. Showing built-in approximate rates, which may be out of date.
         </div>
       )}
     </header>
