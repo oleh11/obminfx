@@ -1,0 +1,25 @@
+<b>ObminFX</b> ("obmin" means "exchange" in Ukrainian) is a free, open-source currency converter that also shows what your bank or card really charges you.
+
+<b>Rates from sources you can name</b>
+<ul>
+<li>European Central Bank (ECB) daily reference rates</li>
+<li>National Bank of Ukraine (NBU) official rates</li>
+<li>Open-market mid-rates for 160+ currencies</li>
+<li>Crypto: BTC, ETH, SOL, USDT</li>
+<li>Precious metals: gold, silver, platinum, palladium</li>
+<li>Mastercard and Visa estimates (mid-rate plus a typical network spread)</li>
+<li>Your own bank's spread, set by you</li>
+</ul>
+
+<b>Bank fee calculator</b>
+See the foreign transaction fee your card adds (0% to 3.5%+), the total you'll be billed, and how it compares with a no-fee travel card.
+
+<b>Also</b>
+<ul>
+<li>Convert into many currencies at once, with favorites pinned to the top</li>
+<li>Historical charts from ECB data</li>
+<li>Works offline with your last saved rates</li>
+<li>No ads, no accounts, no tracking</li>
+</ul>
+
+Rates come from public APIs (Frankfurter/ECB, bank.gov.ua, open.er-api.com, CoinGecko, gold-api.com).
