@@ -1,0 +1,6 @@
+* Live ECB, National Bank of Ukraine and open-market rates
+* Crypto (BTC, ETH, SOL, USDT) and precious metals (gold, silver, platinum, palladium)
+* Mastercard and Visa rates are labeled as estimates; markup now applies to every pair
+* Custom bank spread works
+* Trends shows real ECB history, or says when a pair has none
+* Warning when built-in offline rates are in use
