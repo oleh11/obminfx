@@ -1,7 +1,8 @@
 import { resolveCurrency, ALL_CURRENCIES, GLOBAL_CURRENCY_METADATA } from "../data/currencies";
-import { RateSourceId, ExchangeRateData, HistoricalDataSummary, HistoricalRatePoint } from '../types/currency';
+import { Currency, RateSourceId, ExchangeRateData, HistoricalDataSummary, HistoricalRatePoint } from '../types/currency';
 
-// Baseline fallback rates (USD Base) to guarantee 100% offline functionality
+// Offline fallback rates (1 USD = X). Only used when no source can be reached;
+// the result is flagged with isFallback so the UI can say so.
 const BASELINE_RATES_USD: Record<string, number> = {
   USD: 1.0,
   EUR: 0.9245,
@@ -51,24 +52,66 @@ const BASELINE_RATES_USD: Record<string, number> = {
   JOD: 0.709,
 };
 
-const STORAGE_KEY_PREFIX = 'currency_rates_';
+// v2: v1 cache entries for card networks had the markup baked into the rates
+const STORAGE_KEY_PREFIX = 'currency_rates_v2_';
+const CACHE_TTL_MS = 30 * 60 * 1000;
+
+export const CUSTOM_SPREAD_STORAGE_KEY = 'custom_bank_spread_pct';
+export const DEFAULT_CUSTOM_SPREAD_PCT = 1.5;
+
+// Typical card-network spreads over the market mid-rate. These are estimates:
+// the app does not have access to Mastercard's or Visa's published rates.
+export const CARD_NETWORK_MARKUP_PCT: Partial<Record<RateSourceId, number>> = {
+  mastercard: 0.22,
+  visa: 0.25,
+};
+
+// api.frankfurter.app redirects here, and the redirect has no CORS header
+const FRANKFURTER_BASE = 'https://api.frankfurter.dev/v1';
+const ECB_URL = `${FRANKFURTER_BASE}/latest?base=USD`;
+const OPEN_MARKET_URL = 'https://open.er-api.com/v6/latest/USD';
+const NBU_URL = 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json';
+const COINGECKO_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether&vs_currencies=usd';
+const METAL_PRICE_URL = (code: string) => `https://api.gold-api.com/price/${code}`;
+
+const COINGECKO_IDS: Record<string, string> = { BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', USDT: 'tether' };
+const METAL_CODES = ['XAU', 'XAG', 'XPT', 'XPD'];
+const NON_FIAT_CODES = [...Object.keys(COINGECKO_IDS), ...METAL_CODES];
+
+const today = () => new Date().toISOString().split('T')[0];
+
+async function fetchJson(url: string): Promise<any> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url} returned ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Converts the NBU list (UAH per 1 unit of each currency) into rates per 1 USD.
+ */
+export function parseNBURates(list: unknown): Record<string, number> {
+  if (!Array.isArray(list)) throw new Error('NBU response is not a list');
+  const uahPerUnit: Record<string, number> = {};
+  for (const item of list) {
+    if (item && typeof item.cc === 'string' && typeof item.rate === 'number' && item.rate > 0) {
+      uahPerUnit[item.cc.toUpperCase()] = item.rate;
+    }
+  }
+  const uahPerUsd = uahPerUnit.USD;
+  if (!uahPerUsd) throw new Error('NBU response has no USD rate');
+
+  const rates: Record<string, number> = { USD: 1.0, UAH: uahPerUsd };
+  for (const [code, uah] of Object.entries(uahPerUnit)) {
+    if (code !== 'USD') rates[code] = uahPerUsd / uah;
+  }
+  return rates;
+}
 
 export class RateService {
-  private static cachedData: Record<RateSourceId, ExchangeRateData | null> = {
-    ecb: null,
-    open_market: null,
-    mastercard: null,
-    visa: null,
-    crypto_metals: null,
-    custom_bank: null,
-    currencylayer: null,
-    nbu: null
-  };
+  private static cachedData: Partial<Record<RateSourceId, ExchangeRateData>> = {};
+  private static cryptoMetalsCache: { at: number; rates: Record<string, number> } | null = null;
 
   /**
-   * Fetches exchange rates for the selected source with automatic caching and offline resilience
-   */
-    /**
    * Dynamically extracts all available currencies from live rate data and resolves metadata
    */
   public static getAvailableCurrenciesFromRates(rateData: ExchangeRateData | null): Currency[] {
@@ -80,392 +123,240 @@ export class RateService {
     return Array.from(set).map(code => resolveCurrency(code));
   }
 
+  /**
+   * Fetches exchange rates for the selected source with caching and offline fallback
+   */
   public static async getRates(sourceId: RateSourceId, forceRefresh: boolean = false): Promise<ExchangeRateData> {
-    // Check in-memory cache first
-    if (!forceRefresh && this.cachedData[sourceId]) {
-      return this.cachedData[sourceId]!;
+    const cached = this.cachedData[sourceId];
+    if (!forceRefresh && cached) {
+      return cached;
     }
 
-    // Check localStorage cache
-    const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${sourceId}`);
-    if (stored && !forceRefresh) {
-      try {
-        const parsed: ExchangeRateData = JSON.parse(stored);
-        // Cache valid for 30 minutes unless forced
-        if (Date.now() - parsed.timestamp < 30 * 60 * 1000) {
-          this.cachedData[sourceId] = parsed;
-          return parsed;
-        }
-      } catch (e) {
-        console.warn('Failed to parse cached rates', e);
-      }
-    }
-
-    // Fetch fresh rates from network
+    const storageKey = `${STORAGE_KEY_PREFIX}${sourceId}`;
+    let stored: ExchangeRateData | null = null;
     try {
-      let freshData: ExchangeRateData;
+      const raw = localStorage.getItem(storageKey);
+      if (raw) stored = JSON.parse(raw);
+    } catch (e) {
+      console.warn('Failed to read cached rates', e);
+    }
 
-      switch (sourceId) {
-        case 'ecb':
-          freshData = await this.fetchECBRates();
-          break;
-        case 'open_market':
-          freshData = await this.fetchOpenMarketRates();
-          break;
-        case 'mastercard':
-          freshData = await this.fetchMastercardBenchmarkRates();
-          break;
-        case 'visa':
-          freshData = await this.fetchVisaBenchmarkRates();
-          break;
-        case 'crypto_metals':
-          freshData = await this.fetchCryptoAndMetalsRates();
-          break;
-        case 'custom_bank':
-          freshData = this.getCustomBankRates();
-          break;
-        // Currencylayer API (requires free API key for production, using demo endpoint)
-        case 'currencylayer':
-          freshData = await this.fetchCurrencylayerRates();
-          break;
-        // National Bank of Ukraine API
-        case 'nbu':
-          freshData = await this.fetchNBURates();
-          break;
-        default:
-          freshData = await this.fetchOpenMarketRates();
-      }
+    if (stored && !forceRefresh && Date.now() - stored.timestamp < CACHE_TTL_MS) {
+      this.cachedData[sourceId] = stored;
+      return stored;
+    }
 
-      // Save to localStorage & memory
-      localStorage.setItem(`${STORAGE_KEY_PREFIX}${sourceId}`, JSON.stringify(freshData));
-      this.cachedData[sourceId] = freshData;
-      return freshData;
+    try {
+      const fresh = await this.fetchSource(sourceId);
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(fresh));
+      } catch {}
+      this.cachedData[sourceId] = fresh;
+      return fresh;
     } catch (err) {
-      console.warn(`Failed to fetch fresh rates for ${sourceId}, falling back to cache or baseline`, err);
+      console.warn(`Failed to fetch rates for ${sourceId}, using cache or offline rates`, err);
 
+      // Older real rates beat the built-in table
       if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          this.cachedData[sourceId] = parsed;
-          return parsed;
-        } catch {}
+        this.cachedData[sourceId] = stored;
+        return stored;
       }
 
-      // Fallback baseline
-      const fallback: ExchangeRateData = {
+      // Not cached in memory, so the next call tries the network again
+      return {
         base: 'USD',
-        date: new Date().toISOString().split('T')[0],
+        date: today(),
         timestamp: Date.now(),
         source: sourceId,
-        rates: { ...BASELINE_RATES_USD }
+        rates: { ...BASELINE_RATES_USD },
+        isFallback: true,
       };
-      this.cachedData[sourceId] = fallback;
-      return fallback;
+    }
+  }
+
+  private static async fetchSource(sourceId: RateSourceId): Promise<ExchangeRateData> {
+    switch (sourceId) {
+      case 'ecb':
+        return this.fetchECBRates();
+      case 'nbu':
+        return this.fetchNBURates();
+      // Card networks and the custom bank use the market mid-rate;
+      // their markup is applied in calculateRate.
+      case 'mastercard':
+      case 'visa':
+      case 'custom_bank':
+      case 'open_market':
+      default:
+        return this.fetchOpenMarketRates(sourceId);
     }
   }
 
   /**
-   * European Central Bank rates via Frankfurter API
+   * European Central Bank rates via the Frankfurter API.
+   * Currencies the ECB does not publish are filled from open-market rates.
    */
   private static async fetchECBRates(): Promise<ExchangeRateData> {
-    const response = await fetch('https://api.frankfurter.app/latest?from=USD');
-    if (!response.ok) throw new Error(`ECB API status ${response.status}`);
-    const data = await response.json();
-
-    // Merge with baseline for currencies outside ECB scope
-    const rates: Record<string, number> = {
-      ...BASELINE_RATES_USD,
-      USD: 1.0,
-      ...(data.rates || {})
-    };
+    const [ecb, market] = await Promise.allSettled([fetchJson(ECB_URL), fetchJson(OPEN_MARKET_URL)]);
+    if (ecb.status !== 'fulfilled' || !ecb.value?.rates) {
+      throw ecb.status === 'rejected' ? ecb.reason : new Error('ECB response has no rates');
+    }
+    const marketRates = market.status === 'fulfilled' ? market.value?.rates || {} : {};
 
     return {
       base: 'USD',
-      date: data.date || new Date().toISOString().split('T')[0],
+      date: ecb.value.date || today(),
       timestamp: Date.now(),
       source: 'ecb',
-      rates
+      rates: await this.withCryptoAndMetals({ ...marketRates, ...ecb.value.rates, USD: 1.0 }),
     };
   }
 
   /**
-   * Open Market rates via Open Exchange Rates API
+   * Open-market mid-rates via the Open Exchange Rates API (open.er-api.com)
    */
-  private static async fetchOpenMarketRates(): Promise<ExchangeRateData> {
-    const response = await fetch('https://open.er-api.com/v6/latest/USD');
-    if (!response.ok) throw new Error(`Open Market API status ${response.status}`);
-    const data = await response.json();
-
-    const rates: Record<string, number> = {
-      ...BASELINE_RATES_USD,
-      ...(data.rates || {})
-    };
+  private static async fetchOpenMarketRates(sourceId: RateSourceId): Promise<ExchangeRateData> {
+    const data = await fetchJson(OPEN_MARKET_URL);
+    if (!data?.rates) throw new Error('Open market response has no rates');
 
     return {
       base: 'USD',
-      date: new Date(data.time_last_update_unix ? data.time_last_update_unix * 1000 : Date.now()).toISOString().split('T')[0],
+      date: data.time_last_update_unix ? new Date(data.time_last_update_unix * 1000).toISOString().split('T')[0] : today(),
       timestamp: Date.now(),
-      source: 'open_market',
-      rates
+      source: sourceId,
+      rates: await this.withCryptoAndMetals({ ...data.rates, USD: 1.0 }),
     };
   }
 
   /**
-   * Mastercard FX Benchmark simulation
-   */
-  private static async fetchMastercardBenchmarkRates(): Promise<ExchangeRateData> {
-    let baseRates: Record<string, number> = { ...BASELINE_RATES_USD };
-    try {
-      const res = await fetch('https://open.er-api.com/v6/latest/USD');
-      if (res.ok) {
-        const d = await res.json();
-        if (d.rates) baseRates = { ...baseRates, ...d.rates };
-      }
-    } catch {}
-
-    const mcRates: Record<string, number> = {};
-    for (const [curr, rate] of Object.entries(baseRates)) {
-      if (curr === 'USD') {
-        mcRates[curr] = 1.0;
-      } else {
-        // Mastercard card scheme wholesale FX spread is typically between 0.15% to 0.35%
-        const networkSpread = 1 + (0.0022);
-        mcRates[curr] = rate * networkSpread;
-      }
-    }
-
-    return {
-      base: 'USD',
-      date: new Date().toISOString().split('T')[0],
-      timestamp: Date.now(),
-      source: 'mastercard',
-      rates: mcRates
-    };
-  }
-
-  /**
-   * Visa FX Benchmark simulation
-   * Simulates official Visa card network settlement rates incorporating interbank network wholesale spread
-   */
-  private static async fetchVisaBenchmarkRates(): Promise<ExchangeRateData> {
-    let baseRates: Record<string, number> = { ...BASELINE_RATES_USD };
-    try {
-      const res = await fetch('https://open.er-api.com/v6/latest/USD');
-      if (res.ok) {
-        const d = await res.json();
-        if (d.rates) baseRates = { ...baseRates, ...d.rates };
-      }
-    } catch {}
-
-    const visaRates: Record<string, number> = {};
-    for (const [curr, rate] of Object.entries(baseRates)) {
-      if (curr === 'USD') {
-        visaRates[curr] = 1.0;
-      } else {
-        // Visa card scheme wholesale FX spread is typically between 0.18% to 0.38% (0.25% network benchmark)
-        const networkSpread = 1 + (0.0025);
-        visaRates[curr] = rate * networkSpread;
-      }
-    }
-
-    return {
-      base: 'USD',
-      date: new Date().toISOString().split('T')[0],
-      timestamp: Date.now(),
-      source: 'visa',
-      rates: visaRates
-    };
-  }
-
-  /**
-   * Crypto & Precious Metals Composite
-   */
-  private static async fetchCryptoAndMetalsRates(): Promise<ExchangeRateData> {
-    const rates: Record<string, number> = { ...BASELINE_RATES_USD };
-    return {
-      base: 'USD',
-      date: new Date().toISOString().split('T')[0],
-      timestamp: Date.now(),
-      source: 'crypto_metals',
-      rates
-    };
-  }
-
-  /**
-   * Currencylayer API (free demo endpoint - requires API key for production)
-   * Using their free rate endpoint without key for demo purposes
-   */
-  private static async fetchCurrencylayerRates(): Promise<ExchangeRateData> {
-    try {
-      const response = await fetch('https://api.vrconvertrates.com/latest/USD');
-      if (!response.ok) throw new Error(`Currencylayer API status ${response.status}`);
-      const data = await response.json();
-
-      const rates: Record<string, number> = {
-        ...BASELINE_RATES_USD,
-        USD: 1.0,
-        ...(data.data?.rates || {})
-      };
-
-      return {
-        base: 'USD',
-        date: data.time || new Date().toISOString().split('T')[0],
-        timestamp: Date.now(),
-        source: 'currencylayer',
-        rates
-      };
-    } catch (err) {
-      console.warn('Currencylayer API failed, falling back to baseline', err);
-      return {
-        base: 'USD',
-        date: new Date().toISOString().split('T')[0],
-        timestamp: Date.now(),
-        source: 'currencylayer',
-        rates: { ...BASELINE_RATES_USD }
-      };
-    }
-  }
-
-  /**
-   * National Bank of Ukraine (NBU) Exchange Rates
-   * Official NBU API for Ukrainian Hryvnia exchange rates
+   * National Bank of Ukraine official rates.
+   * Currencies the NBU does not publish are filled from open-market rates.
    */
   private static async fetchNBURates(): Promise<ExchangeRateData> {
-    try {
-      const response = await fetch('https://api.nbu.gov.ua/en/api/v1/forex?date=2024');
-      if (!response.ok) throw new Error(`NBU API status ${response.status}`);
-      const data = await response.json();
+    const [nbu, market] = await Promise.allSettled([fetchJson(NBU_URL), fetchJson(OPEN_MARKET_URL)]);
+    if (nbu.status !== 'fulfilled') throw nbu.reason;
+    const nbuRates = parseNBURates(nbu.value);
+    const marketRates = market.status === 'fulfilled' ? market.value?.rates || {} : {};
+    const nbuDate: string | undefined = Array.isArray(nbu.value) ? nbu.value[0]?.exchangedate : undefined;
 
-      // NBU returns rates from UAH to other currencies
-      // We need to invert them for our USD-based rate format
-      const rates: Record<string, number> = { ...BASELINE_RATES_USD };
+    return {
+      base: 'USD',
+      // NBU dates are DD.MM.YYYY
+      date: nbuDate ? nbuDate.split('.').reverse().join('-') : today(),
+      timestamp: Date.now(),
+      source: 'nbu',
+      rates: await this.withCryptoAndMetals({ ...marketRates, ...nbuRates }),
+    };
+  }
 
-      if (data.rates && Array.isArray(data.rates)) {
-        // NBU typically provides USD as base or UAH as base depending on endpoint
-        // This is a simplified integration - in production you'd need to handle the actual API structure
-        for (const [code, rate] of Object.entries(data.rates)) {
-          if (code !== 'USD' && code !== 'UAH') {
-            rates[code] = rate;
-          }
+  /**
+   * Adds crypto (CoinGecko) and precious metal (gold-api.com) prices for any codes the source lacks.
+   * Failures are ignored: those codes just stay unavailable.
+   */
+  private static async withCryptoAndMetals(rates: Record<string, number>): Promise<Record<string, number>> {
+    if (!this.cryptoMetalsCache || Date.now() - this.cryptoMetalsCache.at > CACHE_TTL_MS) {
+      const extra: Record<string, number> = {};
+      const [crypto, ...metals] = await Promise.allSettled([
+        fetchJson(COINGECKO_URL),
+        ...METAL_CODES.map(code => fetchJson(METAL_PRICE_URL(code))),
+      ]);
+
+      if (crypto.status === 'fulfilled') {
+        for (const [code, id] of Object.entries(COINGECKO_IDS)) {
+          const usd = crypto.value?.[id]?.usd;
+          if (typeof usd === 'number' && usd > 0) extra[code] = 1 / usd;
         }
       }
+      metals.forEach((m, i) => {
+        const usd = m.status === 'fulfilled' ? m.value?.price : undefined;
+        if (typeof usd === 'number' && usd > 0) extra[METAL_CODES[i]] = 1 / usd;
+      });
 
-      return {
-        base: 'USD',
-        date: new Date().toISOString().split('T')[0],
-        timestamp: Date.now(),
-        source: 'nbu',
-        rates
-      };
-    } catch (err) {
-      console.warn('NBU API failed, falling back to baseline', err);
-      return {
-        base: 'USD',
-        date: new Date().toISOString().split('T')[0],
-        timestamp: Date.now(),
-        source: 'nbu',
-        rates: { ...BASELINE_RATES_USD }
-      };
+      // Only cache a useful result, so a failed lookup is retried next time
+      if (Object.keys(extra).length > 0) {
+        this.cryptoMetalsCache = { at: Date.now(), rates: extra };
+      } else {
+        return rates;
+      }
     }
+    return { ...this.cryptoMetalsCache.rates, ...rates };
   }
 
   /**
-   * Calculates direct exchange rate from Currency A to Currency B
+   * Markup (%) a source adds on top of the market mid-rate
    */
-  public static calculateRate(fromCurrency: string, toCurrency: string, rateData: ExchangeRateData): number {
+  public static getMarkupPct(sourceId: RateSourceId): number {
+    if (sourceId === 'custom_bank') {
+      try {
+        const v = parseFloat(localStorage.getItem(CUSTOM_SPREAD_STORAGE_KEY) ?? '');
+        return isFinite(v) && v >= 0 ? v : DEFAULT_CUSTOM_SPREAD_PCT;
+      } catch {
+        return DEFAULT_CUSTOM_SPREAD_PCT;
+      }
+    }
+    return CARD_NETWORK_MARKUP_PCT[sourceId] ?? 0;
+  }
+
+  /**
+   * Rate for 1 unit of fromCurrency in toCurrency, including the source's markup.
+   * Returns NaN when either currency has no rate, so the UI can show it as unavailable.
+   */
+  public static calculateRate(
+    fromCurrency: string,
+    toCurrency: string,
+    rateData: ExchangeRateData,
+    includeMarkup: boolean = true
+  ): number {
     if (fromCurrency === toCurrency) return 1.0;
 
-    const rates = rateData.rates;
-    const fromRateToUSD = rates[fromCurrency];
-    const toRateToUSD = rates[toCurrency];
-
-    if (!fromRateToUSD || !toRateToUSD) {
-      return 1.0;
+    const fromPerUsd = rateData.rates[fromCurrency];
+    const toPerUsd = rateData.rates[toCurrency];
+    if (!(fromPerUsd > 0) || !(toPerUsd > 0)) {
+      return NaN;
     }
 
-    // Since rates are stored relative to USD (1 USD = X Currency)
-    // 1 FromCurrency = (toRateToUSD / fromRateToUSD) ToCurrency
-    return toRateToUSD / fromRateToUSD;
+    // Rates are stored as 1 USD = X currency
+    const midRate = toPerUsd / fromPerUsd;
+    return includeMarkup ? midRate * (1 + this.getMarkupPct(rateData.source) / 100) : midRate;
   }
 
   /**
-   * Fetches or generates historical exchange rate data for charts
+   * Historical rates from the Frankfurter (ECB) API.
+   * Returns null when no history is available for the pair (e.g. UAH, crypto, metals),
+   * rather than making up a series.
    */
   public static async getHistoricalRates(
     fromCurrency: string,
     toCurrency: string,
     timeframe: '7d' | '1m' | '3m' | '1y' | '5y'
-  ): Promise<HistoricalDataSummary> {
+  ): Promise<HistoricalDataSummary | null> {
+    if (fromCurrency === toCurrency || NON_FIAT_CODES.includes(fromCurrency) || NON_FIAT_CODES.includes(toCurrency)) {
+      return null;
+    }
+
     const daysMap = { '7d': 7, '1m': 30, '3m': 90, '1y': 365, '5y': 1825 };
-    const days = daysMap[timeframe];
-    
     const endDate = new Date();
     const startDate = new Date();
-    startDate.setDate(endDate.getDate() - days);
-
+    startDate.setDate(endDate.getDate() - daysMap[timeframe]);
     const startStr = startDate.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
 
     let points: HistoricalRatePoint[] = [];
-
-    // Try fetching from Frankfurter API if both are supported fiat currencies
     try {
-      if (fromCurrency !== toCurrency && !['BTC', 'ETH', 'SOL', 'XAU', 'XAG', 'XPT', 'USDT'].includes(fromCurrency) && !['BTC', 'ETH', 'SOL', 'XAU', 'XAG', 'XPT', 'USDT'].includes(toCurrency)) {
-        const url = `https://api.frankfurter.app/${startStr}..${endStr}?from=${fromCurrency}&to=${toCurrency}`;
-        const response = await fetch(url);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.rates) {
-            points = Object.entries(data.rates).map(([date, rateObj]: [string, any]) => ({
-              date,
-              rate: rateObj[toCurrency] || 1.0
-            }));
-          }
-        }
-      }
+      const data = await fetchJson(`${FRANKFURTER_BASE}/${startStr}..${endStr}?base=${fromCurrency}&symbols=${toCurrency}`);
+      points = Object.entries(data?.rates || {})
+        .map(([date, rateObj]: [string, any]) => ({ date, rate: rateObj?.[toCurrency] }))
+        .filter((p): p is HistoricalRatePoint => typeof p.rate === 'number' && p.rate > 0)
+        .sort((a, b) => a.date.localeCompare(b.date));
     } catch (e) {
-      console.warn('Historical API fetch failed, generating simulated series', e);
+      console.warn('Historical rates unavailable for', fromCurrency, toCurrency, e);
+      return null;
     }
+    if (points.length === 0) return null;
 
-    // Fallback: Generate continuous realistic historical trend points
-    if (points.length === 0) {
-      const currentRate = this.calculateRate(fromCurrency, toCurrency, this.cachedData['open_market'] || {
-        base: 'USD',
-        date: endStr,
-        timestamp: Date.now(),
-        source: 'open_market',
-        rates: BASELINE_RATES_USD
-      });
-
-      const numPoints = Math.min(days, timeframe === '5y' ? 60 : timeframe === '1y' ? 52 : 30);
-      const stepDays = Math.max(1, Math.floor(days / numPoints));
-      
-      let simulatedRate = currentRate * (1 - 0.03); // slight starting offset
-      for (let i = numPoints; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(endDate.getDate() - (i * stepDays));
-        
-        // Random walk with mean reversion
-        const drift = (currentRate - simulatedRate) * 0.05;
-        const noise = (Math.random() - 0.49) * 0.015 * currentRate;
-        simulatedRate = i === 0 ? currentRate : simulatedRate + drift + noise;
-
-        points.push({
-          date: d.toISOString().split('T')[0],
-          rate: Math.max(0.000001, simulatedRate)
-        });
-      }
-    }
-
-    // Calculate metrics
-    const currentRate = points[points.length - 1]?.rate || 1.0;
-    const startRate = points[0]?.rate || currentRate;
+    const currentRate = points[points.length - 1].rate;
+    const startRate = points[0].rate;
     const allRates = points.map(p => p.rate);
-    const high = Math.max(...allRates);
-    const low = Math.min(...allRates);
-    const average = allRates.reduce((a, b) => a + b, 0) / allRates.length;
     const changeValue = currentRate - startRate;
-    const changePercentage = startRate > 0 ? (changeValue / startRate) * 100 : 0;
 
     return {
       fromCurrency,
@@ -473,11 +364,11 @@ export class RateService {
       timeframe,
       dataPoints: points,
       currentRate,
-      high,
-      low,
-      average,
-      changePercentage,
-      changeValue
+      high: Math.max(...allRates),
+      low: Math.min(...allRates),
+      average: allRates.reduce((a, b) => a + b, 0) / allRates.length,
+      changePercentage: (changeValue / startRate) * 100,
+      changeValue,
     };
   }
 }

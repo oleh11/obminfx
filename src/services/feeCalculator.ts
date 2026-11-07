@@ -59,7 +59,7 @@ export function formatCurrencyAmount(
   showSymbol: boolean = false,
   symbol: string = ''
 ): string {
-  if (isNaN(amount) || !isFinite(amount)) return '0.00';
+  if (isNaN(amount) || !isFinite(amount)) return '—';
   
   let formatted: string;
   if (decimalPlaces >= 4) {
@@ -75,6 +75,14 @@ export function formatCurrencyAmount(
   }
   
   return showSymbol && symbol ? `${symbol} ${formatted}` : formatted;
+}
+
+/**
+ * Formats an exchange rate: 6 decimals for tiny rates, 4 otherwise, and a dash when the rate is unknown
+ */
+export function formatRate(rate: number): string {
+  if (!isFinite(rate)) return '—';
+  return rate < 0.01 ? rate.toFixed(6) : rate.toFixed(4);
 }
 
 /**

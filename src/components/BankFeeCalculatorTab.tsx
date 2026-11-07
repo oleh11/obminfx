@@ -7,7 +7,7 @@ import confetti from 'canvas-confetti';
 import { ExchangeRateData } from '../types/currency';
 import { ALL_CURRENCIES, CARD_FEE_PRESETS, getCurrencyMeta } from '../data/currencies';
 import { RateService } from '../services/rateService';
-import { calculateBankFeeConversion, formatCurrencyAmount } from '../services/feeCalculator';
+import { calculateBankFeeConversion, formatCurrencyAmount, formatRate } from '../services/feeCalculator';
 import { StorageService } from '../services/storageService';
 
 interface BankFeeCalculatorTabProps {
@@ -238,13 +238,13 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
             <div className="flex justify-between">
               <span className="text-slate-400">Effective Rate (with fee):</span>
               <span className="font-bold text-white">
-                1 {transMeta.code} = {feeResult.effectiveRate < 0.01 ? feeResult.effectiveRate.toFixed(6) : feeResult.effectiveRate.toFixed(4)} {billMeta.code}
+                1 {transMeta.code} = {formatRate(feeResult.effectiveRate)} {billMeta.code}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Cardholder Reciprocal:</span>
               <span className="font-bold text-white">
-                1 {billMeta.code} = {feeResult.reverseEffectiveRate < 0.01 ? feeResult.reverseEffectiveRate.toFixed(6) : feeResult.reverseEffectiveRate.toFixed(4)} {transMeta.code}
+                1 {billMeta.code} = {formatRate(feeResult.reverseEffectiveRate)} {transMeta.code}
               </span>
             </div>
           </div>

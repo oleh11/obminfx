@@ -5,9 +5,9 @@ import {
 } from 'lucide-react';
 import { RateSourceId, RateSource, ExchangeRateData } from '../types/currency';
 import { AVAILABLE_SOURCES, ALL_CURRENCIES, getCurrencyMeta } from '../data/currencies';
-import { RateService } from '../services/rateService';
+import { RateService, CUSTOM_SPREAD_STORAGE_KEY, DEFAULT_CUSTOM_SPREAD_PCT } from '../services/rateService';
 import { StorageService } from '../services/storageService';
-import { formatCurrencyAmount } from '../services/feeCalculator';
+import { formatCurrencyAmount, formatRate } from '../services/feeCalculator';
 
 interface SourcesTabProps {
   activeSourceId: RateSourceId;
@@ -29,14 +29,14 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
   rateData
 }) => {
   const [customSpread, setCustomSpread] = useState<string>(
-    localStorage.getItem('custom_bank_spread_pct') || '1.5'
+    localStorage.getItem(CUSTOM_SPREAD_STORAGE_KEY) || String(DEFAULT_CUSTOM_SPREAD_PCT)
   );
   const [compareBase, setCompareBase] = useState<string>(baseCurrency || 'USD');
   const [compareTarget, setCompareTarget] = useState<string>(targetCurrency || 'UAH');
 
   const handleCustomSpreadChange = (val: string) => {
     setCustomSpread(val);
-    localStorage.setItem('custom_bank_spread_pct', val);
+    localStorage.setItem(CUSTOM_SPREAD_STORAGE_KEY, val);
   };
 
   const getSourceIcon = (id: RateSourceId) => {
@@ -49,8 +49,6 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
         return <CreditCard className="w-5 h-5 text-amber-400" />;
       case 'visa':
         return <CreditCard className="w-5 h-5 text-blue-400" />;
-      case 'currencylayer':
-        return <Layers className="w-5 h-5 text-[#E2F163]" />;
       case 'custom_bank':
         return <Building2 className="w-5 h-5 text-[#E2F163]" />;
       default:
@@ -131,18 +129,14 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
         <div className="divide-y divide-white/5 border border-white/5 rounded-[22px] overflow-hidden bg-[#0e111a]/80">
           {AVAILABLE_SOURCES.map((source) => {
             const isSelected = source.id === activeSourceId;
-            let rate = 1.0;
-            if (rateData) {
-              rate = RateService.calculateRate(compareBase, compareTarget, rateData);
-              if (source.id === 'mastercard') {
-                rate = rate * 1.0022;
-              } else if (source.id === 'visa') {
-                rate = rate * 1.0025;
-              } else if (source.id === 'custom_bank') {
-                const spread = parseFloat(customSpread) || 1.5;
-                rate = rate * (1 + spread / 100);
-              }
-            }
+            const midRate = rateData
+              ? RateService.calculateRate(compareBase, compareTarget, rateData, false)
+              : NaN;
+            const parsedSpread = parseFloat(customSpread);
+            const markupPct = source.id === 'custom_bank'
+              ? (isFinite(parsedSpread) && parsedSpread >= 0 ? parsedSpread : DEFAULT_CUSTOM_SPREAD_PCT)
+              : RateService.getMarkupPct(source.id);
+            const rate = midRate * (1 + markupPct / 100);
 
             return (
               <div
@@ -172,7 +166,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
 
                 <div className="text-right font-mono">
                   <div className="font-black text-sm text-white">
-                    {rate < 0.01 ? rate.toFixed(6) : rate.toFixed(4)} {targetMeta.symbol}
+                    {formatRate(rate)} {targetMeta.symbol}
                   </div>
                   <div className="text-[10px] text-slate-400">
                     {source.updateFrequency}

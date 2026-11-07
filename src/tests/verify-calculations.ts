@@ -1,4 +1,10 @@
-import { calculateBankFeeConversion, evaluateMathExpression, formatCurrencyAmount } from '../services/feeCalculator';
+import { calculateBankFeeConversion, evaluateMathExpression, formatCurrencyAmount, formatRate } from '../services/feeCalculator';
+import { RateService, parseNBURates } from '../services/rateService';
+import { ExchangeRateData, RateSourceId } from '../types/currency';
+
+const rateData = (source: RateSourceId, rates: Record<string, number>): ExchangeRateData => ({
+  base: 'USD', date: '2026-11-06', timestamp: 0, source, rates
+});
 
 function runTests() {
   console.log('=== Starting Currency Converter & Bank Fee Unit Tests ===\n');
@@ -46,6 +52,32 @@ function runTests() {
   // 5. Test Formatting
   assert(formatCurrencyAmount(1234.56, 2) === '1,234.56', 'Localized thousand separator format');
   assert(formatCurrencyAmount(0.0000154, 6) === '0.000015', 'Crypto high-precision format');
+  assert(formatCurrencyAmount(NaN, 2) === '—', 'Unknown amount shows a dash');
+  assert(formatRate(NaN) === '—', 'Unknown rate shows a dash');
+
+  // 6. Cross rates and missing rates
+  const market = rateData('open_market', { USD: 1, EUR: 0.9, UAH: 41.4 });
+  assert(Math.abs(RateService.calculateRate('EUR', 'UAH', market) - 46) < 1e-9, 'EUR→UAH cross rate via USD', `Got ${RateService.calculateRate('EUR', 'UAH', market)}`);
+  assert(Number.isNaN(RateService.calculateRate('USD', 'BTC', market)), 'Missing currency gives NaN, not 1.0');
+
+  // 7. Card-network markup applies to every pair, including ones without USD
+  const visa = rateData('visa', { USD: 1, EUR: 0.9, UAH: 41.4 });
+  assert(Math.abs(RateService.calculateRate('EUR', 'UAH', visa) - 46 * 1.0025) < 1e-9, 'Visa 0.25% markup on EUR→UAH', `Got ${RateService.calculateRate('EUR', 'UAH', visa)}`);
+  assert(Math.abs(RateService.calculateRate('USD', 'EUR', visa) - 0.9 * 1.0025) < 1e-9, 'Visa 0.25% markup on USD→EUR');
+  assert(Math.abs(RateService.calculateRate('EUR', 'UAH', visa, false) - 46) < 1e-9, 'Mid-rate without markup');
+
+  // 8. NBU response (UAH per unit) converts to rates per 1 USD
+  const nbu = parseNBURates([
+    { cc: 'USD', rate: 41.4, exchangedate: '09.11.2026' },
+    { cc: 'EUR', rate: 46.0, exchangedate: '09.11.2026' },
+    { cc: 'XAU', rate: 168000, exchangedate: '09.11.2026' }
+  ]);
+  assert(nbu.UAH === 41.4, 'NBU: 1 USD = 41.4 UAH');
+  assert(Math.abs(nbu.EUR - 0.9) < 1e-9, 'NBU: 1 USD = 0.9 EUR', `Got ${nbu.EUR}`);
+  assert(Math.abs(1 / nbu.XAU - 168000 / 41.4) < 1e-6, 'NBU: gold price in USD');
+  let threw = false;
+  try { parseNBURates([{ cc: 'EUR', rate: 46 }]); } catch { threw = true; }
+  assert(threw, 'NBU: response without USD is rejected');
 
   console.log(`\n=== Test Results: ${passed}/${total} Passed ===`);
   if (passed === total) {

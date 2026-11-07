@@ -1,5 +1,5 @@
 import { RateSourceId } from '../types/currency';
-import { DEFAULT_PINNED_CURRENCIES } from '../data/currencies';
+import { DEFAULT_PINNED_CURRENCIES, AVAILABLE_SOURCES } from '../data/currencies';
 
 const KEYS = {
   PINNED_CURRENCIES: 'app_pinned_currencies_v1',
@@ -83,7 +83,7 @@ export class StorageService {
 
   static getActiveSource(): RateSourceId {
     const s = localStorage.getItem(KEYS.ACTIVE_SOURCE);
-    return (s as RateSourceId) || 'ecb';
+    return AVAILABLE_SOURCES.some(src => src.id === s) ? (s as RateSourceId) : 'ecb';
   }
 
   static setActiveSource(sourceId: RateSourceId): void {

@@ -6,7 +6,7 @@ import {
 import { ExchangeRateData } from '../types/currency';
 import { getCurrencyMeta } from '../data/currencies';
 import { RateService } from '../services/rateService';
-import { formatCurrencyAmount, calculateBankFeeConversion } from '../services/feeCalculator';
+import { formatCurrencyAmount, calculateBankFeeConversion, formatRate } from '../services/feeCalculator';
 import { StorageService } from '../services/storageService';
 
 interface ConverterTabProps {
@@ -326,7 +326,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               {/* Footer: Live Rate + Action Buttons */}
               <div className="pt-3.5 border-t border-white/10 flex items-center justify-between text-xs">
                 <span className="font-mono text-slate-400 text-[11px]">
-                  1 {baseMeta.code} = {rawRate < 0.01 ? rawRate.toFixed(6) : rawRate.toFixed(4)} {meta.code}
+                  1 {baseMeta.code} = {formatRate(rawRate)} {meta.code}
                 </span>
 
                 <div className="flex items-center gap-2">

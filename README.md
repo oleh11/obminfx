@@ -53,7 +53,8 @@
 
 ### 🏛️ Official Central Bank & Market Rates
 - **Official Benchmarks:** Direct live rates from the **European Central Bank (ECB)** and **National Bank of Ukraine (NBU)**.
-- **Market & Card Networks:** Real-time data from global open markets, Mastercard FX benchmarks, and Visa FX benchmarks.
+- **Market & Card Networks:** Open-market mid-rates (open.er-api.com), plus Mastercard and Visa *estimates* (mid-rate + a typical 0.22% / 0.25% network spread — not the networks' published rates).
+- **Crypto & Metals:** BTC, ETH, SOL and USDT from CoinGecko; gold, silver, platinum and palladium from gold-api.com.
 - **Zero Commercial Bank Bloat:** Pure, transparent interbank exchange rates with no hidden retail markups.
 
 ### 💳 Smart Bank Fee & Surcharge Simulator

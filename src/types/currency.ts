@@ -10,8 +10,7 @@ export interface Currency {
   decimalPlaces: number;
 }
 
-// Added Currencylayer, National Bank of Ukraine (NBU), and Visa as RateSourceIds
-export type RateSourceId = 'ecb' | 'open_market' | 'mastercard' | 'visa' | 'crypto_metals' | 'custom_bank' | 'currencylayer' | 'nbu';
+export type RateSourceId = 'ecb' | 'open_market' | 'mastercard' | 'visa' | 'custom_bank' | 'nbu';
 
 export interface RateSource {
   id: RateSourceId;
@@ -30,6 +29,26 @@ export interface ExchangeRateData {
   timestamp: number;
   source: RateSourceId;
   rates: Record<string, number>;
+  /** True when no live source answered and the built-in offline rates are shown. */
+  isFallback?: boolean;
+}
+
+export interface HistoricalRatePoint {
+  date: string;
+  rate: number;
+}
+
+export interface HistoricalDataSummary {
+  fromCurrency: string;
+  toCurrency: string;
+  timeframe: '7d' | '1m' | '3m' | '1y' | '5y';
+  dataPoints: HistoricalRatePoint[];
+  currentRate: number;
+  high: number;
+  low: number;
+  average: number;
+  changePercentage: number;
+  changeValue: number;
 }
 
 export interface BankFeeConfig {
