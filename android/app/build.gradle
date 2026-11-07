@@ -13,8 +13,8 @@ android {
         applicationId "com.obminfx.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "2.0"
+        versionCode 3
+        versionName "2.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -22,20 +22,28 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Signing secrets live in android/keystore.properties (git-ignored)
+    def keystorePropsFile = rootProject.file("keystore.properties")
+    def keystoreProps = new Properties()
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.withInputStream { keystoreProps.load(it) }
+    }
+    def hasReleaseKey = keystoreProps['storeFile'] && file(keystoreProps['storeFile']).exists()
+
     signingConfigs {
         release {
-            if (file("C:/Users/oleha/obminfx-release-key.jks").exists()) {
-                storeFile file("C:/Users/oleha/obminfx-release-key.jks")
-                storePassword "ObminFX2026!"
-                keyAlias "obminfx"
-                keyPassword "ObminFX2026!"
+            if (hasReleaseKey) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
             }
         }
     }
 
     buildTypes {
         release {
-            if (file("C:/Users/oleha/obminfx-release-key.jks").exists()) {
+            if (hasReleaseKey) {
                 signingConfig signingConfigs.release
             }
             minifyEnabled false
