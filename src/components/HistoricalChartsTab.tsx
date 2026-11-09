@@ -10,6 +10,7 @@ import {
 import { HistoricalDataSummary } from "../types/currency";
 import { ALL_CURRENCIES } from "../data/currencies";
 import { useT } from "../i18n";
+import { useTheme } from '../theme';
 import { RateService } from "../services/rateService";
 import { formatRate } from "../services/feeCalculator";
 import { StorageService } from "../services/storageService";
@@ -24,6 +25,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
   initialTo = "UAH"
 }) => {
   const { t, locale, currency } = useT();
+  const dark = useTheme().resolved === 'dark';
   const [fromCurrency, setFromCurrency] = useState<string>(initialFrom);
   const [toCurrency, setToCurrency] = useState<string>(initialTo);
   const [timeframe, setTimeframe] = useState<"7d" | "1m" | "3m" | "1y" | "5y">("1m");
@@ -197,21 +199,21 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
               <AreaChart data={chartData.dataPoints} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRate" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPositive ? "#059669" : "#E11D48"} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={isPositive ? "#059669" : "#E11D48"} stopOpacity={0.0} />
+                    <stop offset="5%" stopColor={isPositive ? (dark ? "#34d399" : "#059669") : (dark ? "#fb7185" : "#E11D48")} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={isPositive ? (dark ? "#34d399" : "#059669") : (dark ? "#fb7185" : "#E11D48")} stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E6E9EE" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#323740" : "#E6E9EE"} vertical={false} />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 9, fill: "#686C76" }}
+                  tick={{ fontSize: 9, fill: dark ? "#8E939E" : "#686C76" }}
                   tickFormatter={(val) => formatDate(val, { day: "2-digit", month: "2-digit" })}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis 
                   domain={["auto", "auto"]}
-                  tick={{ fontSize: 9, fill: "#686C76" }}
+                  tick={{ fontSize: 9, fill: dark ? "#8E939E" : "#686C76" }}
                   tickFormatter={(val: number) => val.toLocaleString(locale, { maximumFractionDigits: val < 0.01 ? 4 : 2, minimumFractionDigits: val < 0.01 ? 4 : 2 })}
                   axisLine={false}
                   tickLine={false}
@@ -235,7 +237,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
                 <Area 
                   type="monotone" 
                   dataKey="rate" 
-                  stroke={isPositive ? "#059669" : "#E11D48"} 
+                  stroke={isPositive ? (dark ? "#34d399" : "#059669") : (dark ? "#fb7185" : "#E11D48")} 
                   strokeWidth={2.5}
                   fillOpacity={1} 
                   fill="url(#colorRate)" 

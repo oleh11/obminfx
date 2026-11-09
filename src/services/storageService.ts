@@ -8,7 +8,6 @@ const KEYS = {
   TARGET_CURRENCY: 'app_target_currency_v1',
   BANK_FEE_PCT: 'app_bank_fee_pct_v1',
   ACTIVE_SOURCE: 'app_active_source_v1',
-  THEME_MODE: 'app_theme_mode_v1',
   HAPTIC_ENABLED: 'app_haptic_enabled_v1',
   CUSTOM_SPREAD: 'custom_bank_spread_pct'
 };
@@ -90,19 +89,6 @@ export class StorageService {
 
   static setActiveSource(sourceId: RateSourceId): void {
     localStorage.setItem(KEYS.ACTIVE_SOURCE, sourceId);
-  }
-
-  static getTheme(): 'dark' | 'light' {
-    return (localStorage.getItem(KEYS.THEME_MODE) as 'dark' | 'light') || 'dark';
-  }
-
-  static setTheme(theme: 'dark' | 'light'): void {
-    localStorage.setItem(KEYS.THEME_MODE, theme);
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   }
 
   static isHapticEnabled(): boolean {
