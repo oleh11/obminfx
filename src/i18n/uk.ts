@@ -187,5 +187,22 @@ export const uk: Dict = {
   'cur.name.XAU': 'Золото (тройська унція)',
   'cur.name.XAG': 'Срібло (тройська унція)',
   'cur.name.XPT': 'Платина (тройська унція)',
-  'cur.name.XPD': 'Паладій (тройська унція)'
+  'cur.name.XPD': 'Паладій (тройська унція)',
+  'cur.name.USDT': 'Tether',
+  'cur.name.FOK': 'Фарерська крона',
+  'cur.name.GGP': 'Гернсійський фунт',
+  'cur.name.IMP': 'Менський фунт',
+  'cur.name.JEP': 'Джерсійський фунт',
+  'cur.name.KID': 'Кірибатський долар',
+  'cur.name.TVD': 'Тувалуський долар',
+  'cur.country.XAF': 'Центральна Африка',
+  'cur.country.XOF': 'Західна Африка',
+  'cur.country.XCD': 'Східні Кариби',
+  'cur.country.XCG': 'Кюрасао і Сінт-Мартен',
+  'cur.country.XPF': 'Французькі тихоокеанські території',
+  'cur.country.XDR': 'МВФ',
+
+  // Currency search
+  'search.noMatch': 'Немає валют за запитом «{term}»',
+  'search.clear': 'Очистити пошук'
 };

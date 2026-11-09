@@ -186,7 +186,24 @@ export const en = {
   'cur.name.XAU': 'Gold (Troy Ounce)',
   'cur.name.XAG': 'Silver (Troy Ounce)',
   'cur.name.XPT': 'Platinum (Troy Ounce)',
-  'cur.name.XPD': 'Palladium (Troy Ounce)'
+  'cur.name.XPD': 'Palladium (Troy Ounce)',
+  'cur.name.USDT': 'Tether',
+  'cur.name.FOK': 'Faroese Króna',
+  'cur.name.GGP': 'Guernsey Pound',
+  'cur.name.IMP': 'Manx Pound',
+  'cur.name.JEP': 'Jersey Pound',
+  'cur.name.KID': 'Kiribati Dollar',
+  'cur.name.TVD': 'Tuvaluan Dollar',
+  'cur.country.XAF': 'Central Africa',
+  'cur.country.XOF': 'West Africa',
+  'cur.country.XCD': 'Eastern Caribbean',
+  'cur.country.XCG': 'Curaçao & Sint Maarten',
+  'cur.country.XPF': 'French Pacific',
+  'cur.country.XDR': 'IMF',
+
+  // Currency search
+  'search.noMatch': 'No currencies match “{term}”',
+  'search.clear': 'Clear search'
 } as const;
 
 export type TKey = keyof typeof en;
