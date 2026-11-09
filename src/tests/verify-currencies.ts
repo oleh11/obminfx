@@ -1,4 +1,4 @@
-import { resolveCurrency, getCurrencyMeta } from '../data/currencies';
+import { resolveCurrency, getCurrencyMeta, ALL_CURRENCIES, withoutExcludedRates, isExcludedCurrency } from '../data/currencies';
 import { currencyMatches } from '../data/currencySearch';
 import { localizeCurrency } from '../i18n/core';
 import { RateService } from '../services/rateService';
@@ -44,8 +44,8 @@ function runTests() {
   });
   assert(ukUnnamed.length === 0, 'All API codes have a Ukrainian name and country', ukUnnamed.join(', '));
 
-  const rub = getCurrencyMeta('RUB');
-  assert(rub.name === 'Russian Ruble' && rub.country === 'Russia', 'RUB is Russian Ruble / Russia', `${rub.name} / ${rub.country}`);
+  const byn = getCurrencyMeta('BYN');
+  assert(byn.name === 'Belarusian Ruble' && byn.country === 'Belarus', 'BYN is Belarusian Ruble / Belarus', `${byn.name} / ${byn.country}`);
   const afn = resolveCurrency('AFN');
   assert(afn.name === 'Afghan Afghani' && afn.country === 'Afghanistan' && afn.flag === '🇦🇫', 'Intl fallback gives name, country and flag (AFN)', `${afn.name} / ${afn.country} / ${afn.flag}`);
   assert(resolveCurrency('XOF').country === 'West Africa', 'Multi-country code gets a region, not a fake country');
@@ -58,9 +58,19 @@ function runTests() {
   const search = (term: string, lang: 'en' | 'uk') =>
     pickerList.filter(c => currencyMatches(term, c, localizeCurrency(c, lang))).map(c => c.code);
 
-  assert(search('Russ', 'en').includes('RUB'), '"Russ" finds RUB', search('Russ', 'en').join(','));
-  assert(search('Russ', 'uk').includes('RUB'), '"Russ" still finds RUB with the Ukrainian UI');
-  assert(search('рубль', 'uk').includes('RUB'), '"рубль" finds RUB', search('рубль', 'uk').join(','));
+  assert(search('Belarus', 'en').includes('BYN'), '"Belarus" finds BYN', search('Belarus', 'en').join(','));
+  assert(search('Belarus', 'uk').includes('BYN'), '"Belarus" still finds BYN with the Ukrainian UI');
+  assert(search('рубль', 'uk').includes('BYN'), '"рубль" finds BYN', search('рубль', 'uk').join(','));
+
+  // 3. The Russian ruble is never offered, even though rate APIs return it
+  assert(ER_API_CODES.includes('RUB'), 'Test data includes RUB like the real API');
+  assert(!pickerList.some(c => c.code === 'RUB'), 'RUB is not in the currency pickers');
+  assert(!ALL_CURRENCIES.some(c => c.code === 'RUB'), 'RUB is not in the built-in currency list');
+  assert(search('Russ', 'en').length === 0 && search('ruble', 'en').every(c => c !== 'RUB'), 'Searching "Russ"/"ruble" never finds RUB', search('Russ', 'en').join(','));
+  assert(search('рос', 'uk').every(c => c !== 'RUB'), 'Ukrainian search never finds RUB');
+  const filtered = withoutExcludedRates({ USD: 1, RUB: 90, EUR: 0.9 });
+  assert(!('RUB' in filtered) && filtered.EUR === 0.9 && filtered.USD === 1, 'Rate tables drop RUB and keep the rest');
+  assert(isExcludedCurrency('rub') && !isExcludedCurrency('BYN'), 'Exclusion is case-insensitive and specific');
   assert(search('гривня', 'uk').includes('UAH'), '"гривня" finds UAH');
   assert(search('Україна', 'uk').includes('UAH'), '"Україна" finds UAH by country');
   assert(search('zloty', 'en').includes('PLN'), '"zloty" finds PLN (accent-insensitive)');

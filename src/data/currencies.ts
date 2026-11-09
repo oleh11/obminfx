@@ -103,7 +103,6 @@ export const GLOBAL_CURRENCY_METADATA: Record<string, Partial<Currency>> = {
   ZMW: { name: "Zambian Kwacha", symbol: "ZK", flag: "🇿🇲", country: "Zambia", decimalPlaces: 2 },
 
   // Other common currencies (the rest are named via Intl.DisplayNames in resolveCurrency)
-  RUB: { name: "Russian Ruble", symbol: "₽", flag: "🇷🇺", country: "Russia", decimalPlaces: 2 },
   BYN: { name: "Belarusian Ruble", symbol: "Br", flag: "🇧🇾", country: "Belarus", decimalPlaces: 2 },
 
   // Codes that Intl.DisplayNames doesn't name (local issues pegged to another currency)
@@ -132,6 +131,18 @@ export const GLOBAL_CURRENCY_METADATA: Record<string, Partial<Currency>> = {
   XPT: { name: "Platinum (Troy Ounce)", symbol: "oz", flag: "⚪", country: "Precious Commodity", type: "commodity", decimalPlaces: 2 },
   XPD: { name: "Palladium (Troy Ounce)", symbol: "oz", flag: "🔘", country: "Precious Commodity", type: "commodity", decimalPlaces: 2 }
 };
+
+// Currencies the app never shows or converts, even when a rate source returns them.
+export const EXCLUDED_CURRENCIES: ReadonlySet<string> = new Set(["RUB"]);
+
+export function isExcludedCurrency(code: string): boolean {
+  return EXCLUDED_CURRENCIES.has(code.toUpperCase());
+}
+
+/** Copy of a rate table without excluded currencies. */
+export function withoutExcludedRates(rates: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(rates).filter(([code]) => !isExcludedCurrency(code)));
+}
 
 // Generates full Currency object from code with fallback
 export function resolveCurrency(code: string): Currency {
