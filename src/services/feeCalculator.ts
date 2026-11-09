@@ -57,18 +57,19 @@ export function formatCurrencyAmount(
   amount: number,
   decimalPlaces: number = 2,
   showSymbol: boolean = false,
-  symbol: string = ''
+  symbol: string = '',
+  locale: string = 'en-US'
 ): string {
   if (isNaN(amount) || !isFinite(amount)) return '—';
   
   let formatted: string;
   if (decimalPlaces >= 4) {
-    formatted = amount.toLocaleString('en-US', {
+    formatted = amount.toLocaleString(locale, {
       minimumFractionDigits: 2,
       maximumFractionDigits: decimalPlaces
     });
   } else {
-    formatted = amount.toLocaleString('en-US', {
+    formatted = amount.toLocaleString(locale, {
       minimumFractionDigits: decimalPlaces,
       maximumFractionDigits: decimalPlaces
     });
@@ -78,11 +79,13 @@ export function formatCurrencyAmount(
 }
 
 /**
- * Formats an exchange rate: 6 decimals for tiny rates, 4 otherwise, and a dash when the rate is unknown
+ * Formats an exchange rate (in the given locale, if any): 6 decimals for tiny rates, 4 otherwise, and a dash when the rate is unknown
  */
-export function formatRate(rate: number): string {
+export function formatRate(rate: number, locale?: string): string {
   if (!isFinite(rate)) return '—';
-  return rate < 0.01 ? rate.toFixed(6) : rate.toFixed(4);
+  const digits = rate < 0.01 ? 6 : 4;
+  if (!locale) return rate.toFixed(digits);
+  return rate.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 /**

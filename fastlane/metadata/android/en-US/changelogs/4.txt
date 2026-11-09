@@ -1,0 +1,3 @@
+* Ukrainian language: the app follows your phone's language, or switch it in Settings
+* Numbers and dates are formatted for your language
+* Bug fixes: header and buttons no longer get cut off on small screens

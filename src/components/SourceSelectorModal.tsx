@@ -4,6 +4,7 @@ import { RateSourceId, RateSource, ExchangeRateData } from '../types/currency';
 import { AVAILABLE_SOURCES } from '../data/currencies';
 import { StorageService } from '../services/storageService';
 import { RateService } from '../services/rateService';
+import { useT } from '../i18n';
 
 interface SourceSelectorModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
   targetCurrency,
   activeRateData
 }) => {
+  const { t, source: sourceInfo } = useT();
   if (!isOpen) return null;
 
   const getSourceIcon = (id: RateSourceId) => {
@@ -58,8 +60,8 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
               <Globe className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Select Exchange Rate Source</h2>
-              <p className="text-xs text-slate-400">Choose your live data provider or card benchmark</p>
+              <h2 className="text-base font-bold text-white">{t('srcModal.title')}</h2>
+              <p className="text-xs text-slate-400">{t('srcModal.subtitle')}</p>
             </div>
           </div>
           <button
@@ -77,6 +79,7 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {AVAILABLE_SOURCES.map((source: RateSource) => {
             const isSelected = source.id === activeSourceId;
+            const info = sourceInfo(source.id);
             return (
               <div
                 key={source.id}
@@ -97,23 +100,23 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
                       {getSourceIcon(source.id)}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-white text-sm">{source.name}</h3>
+                      <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
+                        <h3 className="font-bold text-white text-sm">{info.name}</h3>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
                           source.isOfficial
                             ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                             : 'bg-slate-700 text-slate-300 border-slate-600'
                         }`}>
-                          {source.badge}
+                          {info.badge}
                         </span>
                       </div>
                       <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                        {source.description}
+                        {info.description}
                       </p>
                       <div className="flex items-center gap-3 mt-2 text-[11px] text-slate-400">
                         <span className="flex items-center gap-1">
                           <Zap className="w-3 h-3 text-amber-400" />
-                          {source.updateFrequency}
+                          {info.updateFrequency}
                         </span>
                       </div>
                     </div>
@@ -133,8 +136,8 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
           <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs leading-relaxed flex items-start gap-2.5">
             <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
             <div>
-              <span className="font-semibold block mb-0.5">Why Exchange Rates Differ Between Sources:</span>
-              Central banks (like ECB) publish daily wholesale reference rates. Card payment networks (Mastercard/Visa) apply wholesale processing spreads. When making card purchases abroad, your bank adds its specific processing fee on top of the network rate.
+              <span className="font-semibold block mb-0.5">{t('srcModal.whyTitle')}</span>
+              {t('srcModal.whyBody')}
             </div>
           </div>
         </div>
@@ -148,7 +151,7 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
             }}
             className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </div>

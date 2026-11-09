@@ -3,6 +3,7 @@ import { Search, Plus, Check, Star, X } from 'lucide-react';
 import { ALL_CURRENCIES } from '../data/currencies';
 import { CurrencyType, Currency } from '../types/currency';
 import { StorageService } from '../services/storageService';
+import { useT } from '../i18n';
 
 interface AddCurrencyModalProps {
   isOpen: boolean;
@@ -23,11 +24,12 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
   onToggleFavorite,
   availableCurrencies = ALL_CURRENCIES
 }) => {
+  const { t, localize } = useT();
   const [search, setSearch] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'favorites' | 'fiat' | 'crypto' | 'commodity'>('all');
 
   const { favoritesList, alphabeticalList } = useMemo(() => {
-    const list = availableCurrencies && availableCurrencies.length > 0 ? availableCurrencies : ALL_CURRENCIES;
+    const list = (availableCurrencies && availableCurrencies.length > 0 ? availableCurrencies : ALL_CURRENCIES).map(localize);
     const term = search.trim().toLowerCase();
 
     const filtered = list.filter((c) => {
@@ -52,7 +54,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
     const others = sorted.filter(c => !favoriteCurrencies.includes(c.code));
 
     return { favoritesList: favs, alphabeticalList: others };
-  }, [availableCurrencies, search, selectedFilter, favoriteCurrencies]);
+  }, [availableCurrencies, search, selectedFilter, favoriteCurrencies, localize]);
 
   if (!isOpen) return null;
 
@@ -70,10 +72,10 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
           <div>
             <h2 className="text-lg font-black text-white flex items-center gap-2">
               <Plus className="w-5 h-5 text-[#E2F163]" />
-              Add Currencies
+              {t('add.title')}
             </h2>
             <p className="text-xs text-slate-400">
-              Alphabetized &bull; {favoriteCurrencies.length} ⭐ favorites &bull; {pinnedCurrencies.length} active
+              {t('add.subtitle', { fav: favoriteCurrencies.length, active: pinnedCurrencies.length })}
             </p>
           </div>
           <button
@@ -95,7 +97,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Vietnam (VND), Canada (CAD), Euro..."
+              placeholder={t('add.search')}
               className="w-full bg-[#181c28] border border-white/5 rounded-[20px] pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#E2F163]/50"
               autoFocus
             />
@@ -110,9 +112,9 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                   StorageService.triggerHaptic();
                   setSelectedFilter(filter);
                 }}
-                className={'px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap capitalize transition-all ' + (selectedFilter === filter ? 'bg-[#E2F163] text-slate-950 shadow-sm' : 'bg-[#181c28] text-slate-400 hover:text-slate-200 border border-white/5')}
+                className={'px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ' + (selectedFilter === filter ? 'bg-[#E2F163] text-slate-950 shadow-sm' : 'bg-[#181c28] text-slate-400 hover:text-slate-200 border border-white/5')}
               >
-                {filter === 'all' ? 'All (A-Z)' : filter === 'favorites' ? `⭐ Favorites (${favoriteCurrencies.length})` : filter}
+                {filter === 'favorites' ? t('filter.favorites', { n: favoriteCurrencies.length }) : t(`filter.${filter}`)}
               </button>
             ))}
           </div>
@@ -125,7 +127,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-black uppercase tracking-wider text-[#E2F163]">
                 <Star className="w-3.5 h-3.5 fill-[#E2F163]" />
-                <span>Favorites (Pinned to Top)</span>
+                <span>{t('add.favoritesHeader')}</span>
               </div>
               <div className="divide-y divide-white/5 border border-[#E2F163]/25 rounded-[24px] bg-[#181c28]/60 overflow-hidden">
                 {favoritesList.map((curr) => {
@@ -159,7 +161,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                             onToggleFavorite(curr.code);
                           }}
                           className="p-2 rounded-full text-[#E2F163] hover:bg-[#E2F163]/15 transition-colors"
-                          title="Favorite"
+                          title={t('add.favorite')}
                         >
                           <Star className="w-4 h-4 fill-[#E2F163]" />
                         </button>
@@ -183,7 +185,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
           {/* Alphabetical Remaining Currencies */}
           <div className="space-y-1.5">
             <div className="px-2 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400">
-              <span>All Currencies (Alphabetical A &rarr; Z)</span>
+              <span>{t('add.allHeader')}</span>
             </div>
             <div className="divide-y divide-white/5 border border-white/5 rounded-[24px] bg-[#181c28]/40 overflow-hidden">
               {alphabeticalList.map((curr) => {
@@ -217,7 +219,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                           onToggleFavorite(curr.code);
                         }}
                         className="p-2 rounded-full text-slate-500 hover:text-[#E2F163] hover:bg-[#E2F163]/15 transition-colors"
-                        title="Add to Favorites"
+                        title={t('common.addFav')}
                       >
                         <Star className="w-4 h-4" />
                       </button>
@@ -247,7 +249,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
             }}
             className="px-5 py-2.5 rounded-full bg-[#E2F163] hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-md shadow-[#E2F163]/25"
           >
-            Done ({pinnedCurrencies.length} Selected)
+            {t('add.done', { n: pinnedCurrencies.length })}
           </button>
         </div>
       </div>

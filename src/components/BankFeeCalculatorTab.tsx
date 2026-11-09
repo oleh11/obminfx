@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ExchangeRateData } from '../types/currency';
-import { ALL_CURRENCIES, CARD_FEE_PRESETS, getCurrencyMeta } from '../data/currencies';
+import { ALL_CURRENCIES, CARD_FEE_PRESETS } from '../data/currencies';
+import { useT } from '../i18n';
 import { RateService } from '../services/rateService';
 import { calculateBankFeeConversion, formatCurrencyAmount, formatRate } from '../services/feeCalculator';
 import { StorageService } from '../services/storageService';
@@ -29,13 +30,14 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
   bankFeePct,
   onBankFeeChange
 }) => {
+  const { t, locale, pct, currency } = useT();
   const [transactionAmount, setTransactionAmount] = useState<string>('100');
   const [transactionCurrency, setTransactionCurrency] = useState<string>(targetCurrency || 'EUR');
   const [cardBillingCurrency, setCardBillingCurrency] = useState<string>(baseCurrency || 'USD');
 
   const amountNum = parseFloat(transactionAmount) || 0;
-  const transMeta = getCurrencyMeta(transactionCurrency);
-  const billMeta = getCurrencyMeta(cardBillingCurrency);
+  const transMeta = currency(transactionCurrency);
+  const billMeta = currency(cardBillingCurrency);
 
   const rawRate = rateData
     ? RateService.calculateRate(transactionCurrency, cardBillingCurrency, rateData)
@@ -76,10 +78,10 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
           </div>
           <div>
             <h2 className="text-base font-black text-white tracking-tight">
-              Bank Fee Simulator
+              {t('fee.title')}
             </h2>
             <p className="text-xs text-slate-400 font-medium mt-0.5">
-              Wholesale interbank & card network fee calculator
+              {t('fee.subtitle')}
             </p>
           </div>
         </div>
@@ -91,7 +93,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
         <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Foreign Purchase
+              {t('fee.foreignPurchase')}
             </label>
             <select
               value={transactionCurrency}
@@ -112,14 +114,14 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
           <button
             onClick={handleSwapCurrencies}
             className="mt-4 p-2.5 rounded-full bg-[#0e111a] hover:bg-[#1a1f2e] active:scale-90 text-[#E2F163] border border-white/5 transition-all"
-            title="Swap currencies"
+            title={t('fee.swap')}
           >
             <ArrowRightLeft className="w-4 h-4" />
           </button>
 
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Card Currency
+              {t('fee.cardCurrency')}
             </label>
             <select
               value={cardBillingCurrency}
@@ -141,7 +143,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
         {/* Transaction Amount Input */}
         <div>
           <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-            Purchase Amount ({transMeta.code})
+            {t('fee.purchaseAmount', { code: transMeta.code })}
           </label>
           <div className="flex items-center bg-[#0e111a] border border-white/5 rounded-[22px] px-4 py-3 focus-within:ring-2 focus-within:ring-amber-500/40">
             <span className="text-[#E2F163] font-bold text-xl mr-2">{transMeta.symbol}</span>
@@ -160,10 +162,10 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
         <div className="pt-3 border-t border-white/5 space-y-2.5">
           <div className="flex items-center justify-between">
             <label className="text-xs font-extrabold text-[#E2F163]">
-              Bank Surcharge Rate:
+              {t('fee.surchargeRate')}
             </label>
             <span className="font-mono font-black text-xs text-[#E2F163] bg-[#E2F163]/15 border border-[#E2F163]/30 px-2.5 py-0.5 rounded-full">
-              {bankFeePct.toFixed(1)}%
+              {pct(bankFeePct, 1)}
             </span>
           </div>
 
@@ -190,8 +192,8 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
                   onClick={() => handlePresetSelect(preset.percentage)}
                   className={'py-2 rounded-[16px] text-center border transition-all ' + (isSelected ? 'bg-[#E2F163]/20 text-[#E2F163] border-[#E2F163]/40 font-black shadow-sm' : 'bg-[#0e111a] text-slate-300 border-white/5 hover:bg-[#1a1f2e] font-bold')}
                 >
-                  <span className="text-xs block">{preset.percentage}%</span>
-                  <span className="text-[9px] text-slate-400 block truncate">{preset.tag}</span>
+                  <span className="text-xs block">{pct(preset.percentage)}</span>
+                  <span className="text-[9px] text-slate-400 block truncate px-1">{t(`preset.${preset.id}.tag`)}</span>
                 </button>
               );
             })}
@@ -204,47 +206,47 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
         <div className="flex items-center justify-between pb-2 border-b border-white/5">
           <div className="flex items-center gap-2">
             <Receipt className="w-4 h-4 text-[#E2F163]" />
-            <h3 className="text-sm font-extrabold text-white">Settlement Breakdown</h3>
+            <h3 className="text-sm font-extrabold text-white">{t('fee.breakdown')}</h3>
           </div>
           <span className="text-[10px] uppercase font-bold text-[#E2F163] bg-[#0e111a] px-2 py-0.5 rounded-full border border-white/5">
-            Interbank Spec
+            {t('fee.interbankSpec')}
           </span>
         </div>
 
         <div className="space-y-2 text-xs">
           <div className="flex justify-between items-center text-slate-300">
-            <span>Wholesale Conversion ({transMeta.code} &rarr; {billMeta.code}):</span>
+            <span>{t('fee.wholesale', { from: transMeta.code, to: billMeta.code })}</span>
             <span className="font-mono font-bold text-white">
-              {formatCurrencyAmount(feeResult.convertedBaseAmount, billMeta.decimalPlaces, true, billMeta.symbol)}
+              {formatCurrencyAmount(feeResult.convertedBaseAmount, billMeta.decimalPlaces, true, billMeta.symbol, locale)}
             </span>
           </div>
 
           <div className="flex justify-between items-center text-[#E2F163] font-semibold">
-            <span>Bank Processing Fee ({bankFeePct.toFixed(1)}%):</span>
+            <span>{t('fee.processingFee', { pct: pct(bankFeePct, 1) })}</span>
             <span className="font-mono font-bold">
-              +{formatCurrencyAmount(feeResult.bankFeeAmount, billMeta.decimalPlaces, true, billMeta.symbol)}
+              +{formatCurrencyAmount(feeResult.bankFeeAmount, billMeta.decimalPlaces, true, billMeta.symbol, locale)}
             </span>
           </div>
 
           <div className="pt-3 border-t border-white/5 flex justify-between items-center">
-            <span className="font-extrabold text-sm text-white">Total Card Charged:</span>
+            <span className="font-extrabold text-sm text-white">{t('fee.total')}</span>
             <span className="font-mono font-black text-2xl text-emerald-400">
-              {formatCurrencyAmount(feeResult.totalBilledAmount, billMeta.decimalPlaces, true, billMeta.symbol)}
+              {formatCurrencyAmount(feeResult.totalBilledAmount, billMeta.decimalPlaces, true, billMeta.symbol, locale)}
             </span>
           </div>
 
           {/* Effective Rates Sub-card */}
           <div className="mt-2 p-3 rounded-[20px] bg-[#0e111a] border border-white/5 text-[11px] text-slate-300 space-y-1 font-mono">
             <div className="flex justify-between">
-              <span className="text-slate-400">Effective Rate (with fee):</span>
+              <span className="text-slate-400">{t('fee.effectiveRate')}</span>
               <span className="font-bold text-white">
-                1 {transMeta.code} = {formatRate(feeResult.effectiveRate)} {billMeta.code}
+                1 {transMeta.code} = {formatRate(feeResult.effectiveRate, locale)} {billMeta.code}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Cardholder Reciprocal:</span>
+              <span className="text-slate-400">{t('fee.reciprocal')}</span>
               <span className="font-bold text-white">
-                1 {billMeta.code} = {formatRate(feeResult.reverseEffectiveRate)} {transMeta.code}
+                1 {billMeta.code} = {formatRate(feeResult.reverseEffectiveRate, locale)} {transMeta.code}
               </span>
             </div>
           </div>

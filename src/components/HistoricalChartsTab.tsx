@@ -8,7 +8,8 @@ import {
   Tooltip, CartesianGrid 
 } from "recharts";
 import { HistoricalDataSummary } from "../types/currency";
-import { ALL_CURRENCIES, getCurrencyMeta } from "../data/currencies";
+import { ALL_CURRENCIES } from "../data/currencies";
+import { useT } from "../i18n";
 import { RateService } from "../services/rateService";
 import { formatRate } from "../services/feeCalculator";
 import { StorageService } from "../services/storageService";
@@ -22,14 +23,21 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
   initialFrom = "USD",
   initialTo = "UAH"
 }) => {
+  const { t, locale, currency } = useT();
   const [fromCurrency, setFromCurrency] = useState<string>(initialFrom);
   const [toCurrency, setToCurrency] = useState<string>(initialTo);
   const [timeframe, setTimeframe] = useState<"7d" | "1m" | "3m" | "1y" | "5y">("1m");
   const [loading, setLoading] = useState<boolean>(true);
   const [chartData, setChartData] = useState<HistoricalDataSummary | null>(null);
 
-  const fromMeta = getCurrencyMeta(fromCurrency);
-  const toMeta = getCurrencyMeta(toCurrency);
+  const fromMeta = currency(fromCurrency);
+  const toMeta = currency(toCurrency);
+
+  // Chart dates are YYYY-MM-DD strings
+  const formatDate = (iso: string, opts: Intl.DateTimeFormatOptions) => {
+    const d = new Date(iso + "T00:00:00");
+    return isNaN(d.getTime()) ? iso : d.toLocaleDateString(locale, opts);
+  };
 
   const fetchChartData = async () => {
     setLoading(true);
@@ -67,10 +75,10 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
           </div>
           <div>
             <h2 className="text-base font-black text-white tracking-tight">
-              Historical Trends
+              {t("trends.title")}
             </h2>
             <p className="text-xs text-slate-400 font-medium mt-0.5">
-              Exchange rate fluctuations & range analysis
+              {t("trends.subtitle")}
             </p>
           </div>
         </div>
@@ -80,7 +88,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             fetchChartData();
           }}
           className="p-2.5 rounded-full bg-[#0e111a] hover:bg-[#1a1f2e] text-slate-300 border border-white/5 transition-all"
-          title="Refresh chart"
+          title={t("trends.refresh")}
         >
           <RefreshCw className={"w-4 h-4 " + (loading ? "animate-spin text-amber-400" : "")} />
         </button>
@@ -91,7 +99,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
         <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Base Currency
+              {t("trends.base")}
             </label>
             <select
               value={fromCurrency}
@@ -112,14 +120,14 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
           <button
             onClick={handleSwap}
             className="mt-4 p-2.5 rounded-full bg-[#0e111a] hover:bg-[#1a1f2e] active:scale-90 text-amber-400 border border-white/5 transition-all"
-            title="Swap"
+            title={t("trends.swap")}
           >
             <ArrowRightLeft className="w-4 h-4" />
           </button>
 
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Target Currency
+              {t("trends.target")}
             </label>
             <select
               value={toCurrency}
@@ -147,9 +155,9 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
                 StorageService.triggerHaptic();
                 setTimeframe(tf);
               }}
-              className={"py-2 rounded-[16px] text-xs font-black uppercase transition-all " + (timeframe === tf ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20" : "bg-[#0e111a] text-slate-400 hover:text-slate-200 border border-white/5")}
+              className={"py-2 rounded-[16px] text-xs font-black uppercase whitespace-nowrap transition-all " + (timeframe === tf ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20" : "bg-[#0e111a] text-slate-400 hover:text-slate-200 border border-white/5")}
             >
-              {tf}
+              {t(`tf.${tf}`)}
             </button>
           ))}
         </div>
@@ -164,7 +172,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             </div>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="font-mono font-black text-3xl text-white">
-                {chartData ? formatRate(chartData.currentRate) : "---"}
+                {chartData ? formatRate(chartData.currentRate, locale) : "---"}
               </span>
               <span className="text-xs font-bold text-amber-400">{toMeta.symbol}</span>
             </div>
@@ -173,7 +181,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
           {chartData && (
             <div className={"px-3 py-1 rounded-full text-xs font-black flex items-center gap-1 border " + (isPositive ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-rose-500/15 text-rose-300 border-rose-500/30")}>
               {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-              <span>{isPositive ? "+" : ""}{chartData.changePercentage.toFixed(2)}%</span>
+              <span>{isPositive ? "+" : ""}{chartData.changePercentage.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span>
             </div>
           )}
         </div>
@@ -182,7 +190,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
           {loading ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-2">
               <Activity className="w-6 h-6 animate-pulse text-amber-400" />
-              <span className="text-xs">Loading market rate history...</span>
+              <span className="text-xs">{t("trends.loading")}</span>
             </div>
           ) : chartData && chartData.dataPoints.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -197,14 +205,14 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
                 <XAxis 
                   dataKey="date" 
                   tick={{ fontSize: 9, fill: "#64748b" }}
-                  tickFormatter={(val) => val.slice(5)}
+                  tickFormatter={(val) => formatDate(val, { day: "2-digit", month: "2-digit" })}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis 
                   domain={["auto", "auto"]}
                   tick={{ fontSize: 9, fill: "#64748b" }}
-                  tickFormatter={(val) => val < 0.01 ? val.toFixed(4) : val.toFixed(2)}
+                  tickFormatter={(val: number) => val.toLocaleString(locale, { maximumFractionDigits: val < 0.01 ? 4 : 2, minimumFractionDigits: val < 0.01 ? 4 : 2 })}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -214,9 +222,9 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
                       const val = payload[0].value as number;
                       return (
                         <div className="bg-[#0b101b] border border-white/10 p-2.5 rounded-[16px] shadow-xl text-xs font-mono">
-                          <p className="text-slate-400 text-[10px] mb-0.5">{label}</p>
+                          <p className="text-slate-400 text-[10px] mb-0.5">{formatDate(String(label), { day: "numeric", month: "short", year: "numeric" })}</p>
                           <p className="font-black text-amber-400">
-                            1 {fromCurrency} = {formatRate(val)} {toCurrency}
+                            1 {fromCurrency} = {formatRate(val, locale)} {toCurrency}
                           </p>
                         </div>
                       );
@@ -236,9 +244,9 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 text-xs gap-1 px-4">
-              <span>No rate history available for {fromCurrency} / {toCurrency}.</span>
+              <span>{t("trends.noData", { from: fromCurrency, to: toCurrency })}</span>
               <span className="text-[10px] text-slate-600">
-                History comes from ECB data, which doesn't cover every currency (e.g. UAH), crypto or metals.
+                {t("trends.noDataHint")}
               </span>
             </div>
           )}
@@ -248,21 +256,21 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
         {chartData && (
           <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5 text-center">
             <div className="p-3 rounded-[20px] bg-[#0e111a] border border-white/5">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">High</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">{t("trends.high")}</span>
               <span className="font-mono text-xs font-black text-emerald-400">
-                {formatRate(chartData.high)}
+                {formatRate(chartData.high, locale)}
               </span>
             </div>
             <div className="p-3 rounded-[20px] bg-[#0e111a] border border-white/5">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Low</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">{t("trends.low")}</span>
               <span className="font-mono text-xs font-black text-rose-400">
-                {formatRate(chartData.low)}
+                {formatRate(chartData.low, locale)}
               </span>
             </div>
             <div className="p-3 rounded-[20px] bg-[#0e111a] border border-white/5">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Average</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">{t("trends.average")}</span>
               <span className="font-mono text-xs font-black text-amber-300">
-                {formatRate(chartData.average)}
+                {formatRate(chartData.average, locale)}
               </span>
             </div>
           </div>
