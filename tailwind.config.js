@@ -8,6 +8,16 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Light theme tokens, defined in src/index.css
+        ink: 'rgb(var(--ink) / <alpha-value>)',
+        ink2: 'rgb(var(--ink2) / <alpha-value>)',
+        muted: 'rgb(var(--muted) / <alpha-value>)',
+        card: 'rgb(var(--card) / <alpha-value>)',
+        inset: 'rgb(var(--inset) / <alpha-value>)',
+        inset2: 'rgb(var(--inset2) / <alpha-value>)',
+        line: 'rgb(var(--line) / <alpha-value>)',
+        accent: 'rgb(var(--accent) / <alpha-value>)',
+        onaccent: 'rgb(var(--onaccent) / <alpha-value>)',
         // Material You / Material Design 3 Dynamic Token System
         primary: {
           50: '#eef2ff',

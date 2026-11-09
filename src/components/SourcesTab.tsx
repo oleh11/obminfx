@@ -44,17 +44,17 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
   const getSourceIcon = (id: RateSourceId) => {
     switch (id) {
       case 'ecb':
-        return <ShieldCheck className="w-5 h-5 text-[#E2F163]" />;
+        return <ShieldCheck className="w-5 h-5 text-accent" />;
       case 'nbu':
-        return <Globe className="w-5 h-5 text-[#E2F163]" />;
+        return <Globe className="w-5 h-5 text-accent" />;
       case 'mastercard':
-        return <CreditCard className="w-5 h-5 text-amber-400" />;
+        return <CreditCard className="w-5 h-5 text-amber-700" />;
       case 'visa':
-        return <CreditCard className="w-5 h-5 text-blue-400" />;
+        return <CreditCard className="w-5 h-5 text-blue-600" />;
       case 'custom_bank':
-        return <Building2 className="w-5 h-5 text-[#E2F163]" />;
+        return <Building2 className="w-5 h-5 text-accent" />;
       default:
-        return <Globe className="w-5 h-5 text-[#E2F163]" />;
+        return <Globe className="w-5 h-5 text-accent" />;
     }
   };
 
@@ -64,16 +64,16 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
   return (
     <div className="space-y-4 w-full pb-8">
       {/* Header Banner - Warm Charcoal & Gold */}
-      <div className="p-5 rounded-[28px] bg-[#161a26] border border-white/5 shadow-xl flex items-center justify-between">
+      <div className="p-5 rounded-[24px] bg-card border border-line/[0.08] shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-[20px] bg-[#E2F163]/15 border border-[#E2F163]/25 flex items-center justify-center text-[#E2F163]">
+          <div className="w-12 h-12 rounded-[20px] bg-accent/[0.06] border border-accent/[0.18] flex items-center justify-center text-accent">
             <Layers className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-black text-white tracking-tight">
+            <h2 className="text-base font-black text-ink tracking-tight">
               {t('src.title')}
             </h2>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">
+            <p className="text-xs text-muted font-medium mt-0.5">
               {t('src.subtitle')}
             </p>
           </div>
@@ -84,21 +84,21 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
             onRefreshAll();
           }}
           disabled={isRefreshing}
-          className="p-2.5 rounded-full bg-[#0e111a] hover:bg-[#1a1f2e] text-slate-300 border border-white/5 transition-all disabled:opacity-50"
+          className="p-2.5 rounded-full bg-inset hover:bg-inset2 text-ink2 border border-line/[0.08] transition-all disabled:opacity-50"
           title={t('src.refreshAll')}
         >
-          <RefreshCw className={'w-4 h-4 ' + (isRefreshing ? 'animate-spin text-[#E2F163]' : '')} />
+          <RefreshCw className={'w-4 h-4 ' + (isRefreshing ? 'animate-spin text-accent' : '')} />
         </button>
       </div>
 
       {/* Live Provider Comparison Bento Box */}
-      <div className="p-5 rounded-[32px] bg-[#161a26] border border-white/5 shadow-xl space-y-4">
+      <div className="p-5 rounded-[24px] bg-card border border-line/[0.08] shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black text-white flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-[#E2F163]" />
+          <h3 className="text-sm font-black text-ink flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-accent" />
             {t('src.comparison')}
           </h3>
-          <span className="text-[11px] text-[#E2F163] font-mono font-bold">1 {compareBase} &rarr; {compareTarget}</span>
+          <span className="text-[11px] text-accent font-mono font-bold">1 {compareBase} &rarr; {compareTarget}</span>
         </div>
 
         {/* Currency selectors */}
@@ -106,7 +106,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           <select
             value={compareBase}
             onChange={(e) => setCompareBase(e.target.value)}
-            className="bg-[#0e111a] border border-white/5 rounded-[18px] px-3 py-2.5 font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#E2F163]/40"
+            className="bg-inset border border-line/[0.08] rounded-[18px] px-3 py-2.5 font-bold text-ink focus:outline-none focus:ring-1 focus:ring-accent/20"
           >
             {[...ALL_CURRENCIES].sort((a, b) => a.code.localeCompare(b.code)).map((c) => (
               <option key={'src-base-' + c.code} value={c.code}>
@@ -117,7 +117,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           <select
             value={compareTarget}
             onChange={(e) => setCompareTarget(e.target.value)}
-            className="bg-[#0e111a] border border-white/5 rounded-[18px] px-3 py-2.5 font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#E2F163]/40"
+            className="bg-inset border border-line/[0.08] rounded-[18px] px-3 py-2.5 font-bold text-ink focus:outline-none focus:ring-1 focus:ring-accent/20"
           >
             {[...ALL_CURRENCIES].sort((a, b) => a.code.localeCompare(b.code)).map((c) => (
               <option key={'src-target-' + c.code} value={c.code}>
@@ -128,7 +128,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
         </div>
 
         {/* Comparison List */}
-        <div className="divide-y divide-white/5 border border-white/5 rounded-[22px] overflow-hidden bg-[#0e111a]/80">
+        <div className="divide-y divide-line/[0.08] border border-line/[0.08] rounded-[22px] overflow-hidden bg-inset/80">
           {AVAILABLE_SOURCES.map((source) => {
             const isSelected = source.id === activeSourceId;
             const info = sourceInfo(source.id);
@@ -148,30 +148,30 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
                   StorageService.triggerHaptic();
                   onSelectSource(source.id);
                 }}
-                className={'p-3.5 flex items-center justify-between cursor-pointer transition-all ' + (isSelected ? 'bg-[#E2F163]/15 border-l-4 border-l-amber-500' : 'hover:bg-[#1a1f2e]')}
+                className={'p-3.5 flex items-center justify-between cursor-pointer transition-all ' + (isSelected ? 'bg-accent/[0.06] border-l-4 border-l-amber-500' : 'hover:bg-inset2')}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-[14px] bg-[#161a26] border border-white/5">
+                  <div className="p-2 rounded-[14px] bg-card border border-line/[0.08]">
                     {getSourceIcon(source.id)}
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-sm text-white">{info.shortName}</span>
+                      <span className="font-extrabold text-sm text-ink">{info.shortName}</span>
                       {isSelected && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#E2F163] text-slate-950 font-black uppercase">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent text-onaccent font-black uppercase">
                           {t('src.active')}
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-400">{info.badge}</span>
+                    <span className="text-[11px] text-muted">{info.badge}</span>
                   </div>
                 </div>
 
                 <div className="text-right font-mono">
-                  <div className="font-black text-sm text-white">
+                  <div className="font-black text-sm text-ink">
                     {formatRate(rate, locale)} {targetMeta.symbol}
                   </div>
-                  <div className="text-[10px] text-slate-400">
+                  <div className="text-[10px] text-muted">
                     {info.updateFrequency}
                   </div>
                 </div>
@@ -183,7 +183,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
 
       {/* Provider Details Cards */}
       <div className="space-y-3">
-        <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 px-1">
+        <h3 className="text-xs font-black uppercase tracking-wider text-ink2 px-1">
           {t('src.benchmarks')}
         </h3>
 
@@ -193,23 +193,23 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           return (
             <div
               key={'card-' + source.id}
-              className={'p-5 rounded-[28px] border transition-all ' + (isSelected ? 'bg-[#161a26] border-[#E2F163]/50 shadow-xl ring-1 ring-[#E2F163]/25' : 'bg-[#141722] border-white/5 hover:border-slate-700')}
+              className={'p-5 rounded-[24px] border transition-all ' + (isSelected ? 'bg-card border-line/[0.08]' : 'bg-card border-line/[0.08] hover:border-line/[0.08]')}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-[18px] bg-[#0e111a] border border-white/5 flex-shrink-0">
+                  <div className="p-2.5 rounded-[18px] bg-inset border border-line/[0.08] flex-shrink-0">
                     {getSourceIcon(source.id)}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-black text-white text-sm">{info.name}</h4>
+                      <h4 className="font-black text-ink text-sm">{info.name}</h4>
                       {source.isOfficial && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#E2F163]/15 text-[#E2F163] border border-[#E2F163]/30">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-accent/[0.06] text-accent border border-accent/[0.18]">
                           {t('src.official')}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">{info.description}</p>
+                    <p className="text-xs text-ink2 mt-1 leading-relaxed">{info.description}</p>
                   </div>
                 </div>
 
@@ -218,24 +218,24 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
                     StorageService.triggerHaptic();
                     onSelectSource(source.id);
                   }}
-                  className={'px-4 py-1.5 rounded-full text-xs font-black transition-all shrink-0 active:scale-95 ' + (isSelected ? 'bg-[#E2F163] text-slate-950 shadow-md shadow-[#E2F163]/20' : 'bg-[#1e2333] text-slate-300 hover:bg-[#2a3147] border border-white/5')}
+                  className={'px-4 py-1.5 rounded-full text-xs font-black transition-all shrink-0 active:scale-95 ' + (isSelected ? 'bg-accent text-onaccent shadow-md shadow-black/10' : 'bg-card text-ink2 hover:bg-inset2 border border-line/[0.08]')}
                 >
                   {isSelected ? t('src.active') : t('common.select')}
                 </button>
               </div>
 
               {source.id === 'custom_bank' && (
-                <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-bold">{t('src.customSpread')}</span>
+                <div className="mt-3 pt-3 border-t border-line/[0.08] flex items-center justify-between text-xs">
+                  <span className="text-ink2 font-bold">{t('src.customSpread')}</span>
                   <div className="flex items-center gap-1.5">
                     <input
                       type="number"
                       step="0.1"
                       value={customSpread}
                       onChange={(e) => handleCustomSpreadChange(e.target.value)}
-                      className="w-16 bg-[#0e111a] border border-white/10 rounded-lg px-2 py-1 text-center font-mono font-black text-white focus:outline-none focus:ring-1 focus:ring-[#E2F163]"
+                      className="w-16 bg-inset border border-line/[0.08] rounded-lg px-2 py-1 text-center font-mono font-black text-ink focus:outline-none focus:ring-1 focus:ring-accent/20"
                     />
-                    <span className="font-bold text-[#E2F163]">%</span>
+                    <span className="font-bold text-accent">%</span>
                   </div>
                 </div>
               )}

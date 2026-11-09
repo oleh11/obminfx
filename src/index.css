@@ -3,6 +3,25 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme: soft pastel background, white cards, black type (tokens used via tailwind.config.js) */
+  :root {
+    --ink: 0 0 0;
+    --ink2: 38 40 46;
+    --muted: 104 108 118;
+    --card: 255 255 255;
+    --inset: 241 243 246;
+    --inset2: 230 233 238;
+    --line: 0 0 0;
+    --accent: 0 0 0;
+    --onaccent: 255 255 255;
+    color-scheme: light;
+  }
+
+  body {
+    background: linear-gradient(165deg, #d6efe6 0%, #dde9f6 48%, #ece4f4 100%) fixed;
+    color: rgb(var(--ink));
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
     user-select: none;

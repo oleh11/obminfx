@@ -78,22 +78,22 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
   return (
     <div className="space-y-4 w-full pb-8">
       {/* Diia-Inspired Currency Document Pass Card */}
-      <div className="p-6 rounded-[32px] bg-[#161a24] border border-white/10 shadow-2xl relative overflow-hidden transition-all">
+      <div className="p-6 rounded-[24px] bg-card border border-line/[0.08] shadow-2xl relative overflow-hidden transition-all">
         {/* Subtle Ambient Radial Glow */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4FF00]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/[0.04] rounded-full blur-3xl pointer-events-none" />
 
         {/* Document Header */}
-        <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-line/[0.08]">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#D4FF00]/20 flex items-center justify-center text-[#D4FF00]">
+            <div className="w-6 h-6 rounded-full bg-accent/[0.06] flex items-center justify-center text-accent">
               <ShieldCheck className="w-3.5 h-3.5" />
             </div>
-            <span className="text-xs font-black tracking-wide text-white uppercase">
+            <span className="text-xs font-black tracking-wide text-ink uppercase">
               {t('conv.pass')} &bull; {baseMeta.code}
             </span>
           </div>
 
-          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10">
+          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-inset text-ink2 border border-line/[0.08]">
             {lastUpdatedTime ? lastUpdatedTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : t('conv.live')}
           </span>
         </div>
@@ -106,16 +106,16 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               StorageService.triggerHaptic();
               onOpenSelectBaseModal();
             }}
-            className="flex items-center gap-3 px-4 py-2.5 min-w-0 rounded-[22px] bg-[#0d1017] hover:bg-[#1a1f2e] active:scale-98 border border-white/10 hover:border-[#D4FF00]/40 text-white transition-all shadow-sm group"
+            className="flex items-center gap-3 px-4 py-2.5 min-w-0 rounded-[22px] bg-card hover:bg-inset2 active:scale-98 border border-line/[0.08] hover:border-accent/[0.18] text-ink transition-all shadow-sm group"
             title={t('conv.changeBaseTitle')}
           >
             <span className="text-2xl">{baseMeta.flag}</span>
             <div className="text-left min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-base text-slate-100 group-hover:text-[#D4FF00] transition-colors">{baseMeta.code}</span>
-                <ChevronDown className="w-4 h-4 text-[#D4FF00] transition-transform group-hover:translate-y-0.5" />
+                <span className="font-black text-base text-ink2 group-hover:text-accent transition-colors">{baseMeta.code}</span>
+                <ChevronDown className="w-4 h-4 text-accent transition-transform group-hover:translate-y-0.5" />
               </div>
-              <span className="text-[11px] text-slate-400 font-medium block truncate max-w-[140px]">
+              <span className="text-[11px] text-muted font-medium block truncate max-w-[140px]">
                 {baseMeta.country} &bull; {t('conv.tapToChange')}
               </span>
             </div>
@@ -127,7 +127,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               StorageService.triggerHaptic();
               setShowFeeBar(!showFeeBar);
             }}
-            className={'flex items-center gap-1.5 px-3.5 py-2 shrink-0 whitespace-nowrap rounded-full text-xs font-extrabold transition-all border ' + (bankFeePct > 0 ? 'bg-[#D4FF00]/15 text-[#D4FF00] border-[#D4FF00]/30 shadow-sm' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30')}
+            className={'flex items-center gap-1.5 px-3.5 py-2 shrink-0 whitespace-nowrap rounded-full text-xs font-extrabold transition-all border ' + (bankFeePct > 0 ? 'bg-inset text-ink border-line/[0.08]' : 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30')}
           >
             <Percent className="w-3.5 h-3.5" />
             <span>{bankFeePct > 0 ? t('conv.feePill', { fee: pct(bankFeePct) }) : t('conv.noFee')}</span>
@@ -136,8 +136,8 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
 
         {/* Number Input Display */}
         <div className="my-2">
-          <div className="flex items-baseline justify-end gap-2 bg-[#0d1017]/90 border border-white/10 rounded-[24px] px-5 py-4 focus-within:ring-2 focus-within:ring-[#D4FF00]/50 transition-all">
-            <span className="text-[#D4FF00] font-black text-2xl select-none">
+          <div className="flex items-baseline justify-end gap-2 bg-card/90 border border-line/[0.08] rounded-[24px] px-5 py-4 focus-within:ring-2 focus-within:ring-accent/20 transition-all">
+            <span className="text-accent font-black text-2xl select-none">
               {baseMeta.symbol}
             </span>
             <input
@@ -147,12 +147,12 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               value={baseAmount}
               onChange={(e) => onAmountChange(e.target.value)}
               placeholder="0.00"
-              className="w-full bg-transparent text-right font-mono font-black text-4xl text-white placeholder-slate-600 focus:outline-none tracking-tight"
+              className="w-full bg-transparent text-right font-mono font-black text-4xl text-ink placeholder-muted focus:outline-none tracking-tight"
             />
           </div>
-          <div className="flex items-center justify-between text-xs text-slate-400 font-medium mt-2 px-2">
-            <span className="flex items-center gap-1 text-[11px] text-slate-400 font-mono">
-              <Clock className="w-3 h-3 text-[#D4FF00]" />
+          <div className="flex items-center justify-between text-xs text-muted font-medium mt-2 px-2">
+            <span className="flex items-center gap-1 text-[11px] text-muted font-mono">
+              <Clock className="w-3 h-3 text-accent" />
               {lastUpdatedTime ? t('conv.liveAt', { time: lastUpdatedTime.toLocaleTimeString(locale) }) : t('conv.connecting')}
             </span>
             <span>{baseMeta.name}</span>
@@ -161,14 +161,14 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
 
         {/* Bank Fee Quick Presets */}
         {showFeeBar && (
-          <div className="mt-4 pt-4 border-t border-white/10 animate-fade-in space-y-2.5">
+          <div className="mt-4 pt-4 border-t border-line/[0.08] animate-fade-in space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
                 {t('conv.surcharge')}
               </span>
               <button
                 onClick={onNavigateToFeeCalc}
-                className="text-xs font-bold text-[#D4FF00] hover:underline flex items-center gap-0.5"
+                className="text-xs font-bold text-accent hover:underline flex items-center gap-0.5"
               >
                 <span>{t('conv.fullSimulator')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -185,7 +185,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       StorageService.triggerHaptic();
                       onBankFeeChange(fee);
                     }}
-                    className={'py-2.5 rounded-[18px] text-xs font-extrabold border transition-all ' + (isSelected ? 'bg-[#D4FF00]/20 text-[#D4FF00] border-[#D4FF00]/40 shadow-sm' : 'bg-[#0d1017] text-slate-300 border-white/10 hover:bg-[#1a1f2e]')}
+                    className={'py-2.5 rounded-[18px] text-xs font-extrabold border transition-all ' + (isSelected ? 'bg-accent text-onaccent border-accent shadow-sm' : 'bg-card text-ink2 border-line/[0.08] hover:bg-inset2')}
                   >
                     {fee === 0 ? t('common.feeFree') : fee === 2.0 ? t('common.feeAvg') : pct(fee)}
                   </button>
@@ -199,10 +199,10 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
       {/* Watchlist Section Header */}
       <div className="flex items-center justify-between gap-2 px-2 pt-1">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-black uppercase tracking-wider text-slate-300">
+          <span className="text-xs font-black uppercase tracking-wider text-ink2">
             {t('conv.conversions')}
           </span>
-          <span className="shrink-0 whitespace-nowrap text-[11px] px-2.5 py-0.5 rounded-full bg-[#161a24] font-bold text-[#D4FF00] border border-[#D4FF00]/20">
+          <span className="shrink-0 whitespace-nowrap text-[11px] px-2.5 py-0.5 rounded-full bg-card font-bold text-accent border border-accent/[0.18]">
             {t('conv.activeCount', { n: sortedCurrencies.length })}
           </span>
         </div>
@@ -212,7 +212,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
             StorageService.triggerHaptic();
             onOpenAddModal();
           }}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 shrink-0 whitespace-nowrap rounded-full bg-[#D4FF00] hover:bg-[#c2ea00] active:scale-95 text-slate-950 text-xs font-black transition-all shadow-md shadow-[#D4FF00]/20"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 shrink-0 whitespace-nowrap rounded-full bg-accent hover:bg-accent active:scale-95 text-onaccent text-xs font-black transition-all shadow-md shadow-black/10"
         >
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
           <span>{t('conv.addCurrency')}</span>
@@ -242,7 +242,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
           return (
             <div
               key={code}
-              className={'p-5 rounded-[28px] bg-[#161a24] border transition-all relative overflow-hidden ' + (isFavorite ? 'border-[#D4FF00]/35 ring-1 ring-[#D4FF00]/20 shadow-xl' : 'border-white/10 hover:border-slate-700 shadow-lg')}
+              className={'p-5 rounded-[24px] bg-card border transition-all relative overflow-hidden ' + (isFavorite ? 'border-line/[0.08]' : 'border-line/[0.08] hover:border-line/[0.08] shadow-sm')}
             >
               {/* Card Header */}
               <div className="flex items-start justify-between">
@@ -254,18 +254,18 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                   }}
                   title={t('conv.setBaseTitle', { code })}
                 >
-                  <div className="w-12 h-12 rounded-[20px] bg-[#0d1017] border border-white/10 group-hover:border-[#D4FF00]/40 flex items-center justify-center text-2xl shadow-inner transition-colors">
+                  <div className="w-12 h-12 rounded-[20px] bg-card border border-line/[0.08] group-hover:border-accent/[0.18] flex items-center justify-center text-2xl shadow-inner transition-colors">
                     {meta.flag}
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-lg text-white group-hover:text-[#D4FF00] tracking-tight transition-colors">{meta.code}</span>
-                      <span className="text-xs text-[#D4FF00] font-mono font-bold">({meta.symbol})</span>
+                      <span className="font-extrabold text-lg text-ink group-hover:text-accent tracking-tight transition-colors">{meta.code}</span>
+                      <span className="text-xs text-accent font-mono font-bold">({meta.symbol})</span>
                       {isFavorite && (
-                        <Star className="w-3.5 h-3.5 fill-[#D4FF00] text-[#D4FF00] ml-0.5" />
+                        <Star className="w-3.5 h-3.5 fill-accent text-accent ml-0.5" />
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 font-medium group-hover:text-slate-300 transition-colors">
+                    <p className="text-xs text-muted font-medium group-hover:text-ink2 transition-colors">
                       {meta.name}
                     </p>
                   </div>
@@ -278,7 +278,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       StorageService.triggerHaptic();
                       onSelectBaseCurrency(code);
                     }}
-                    className="p-2 rounded-full text-slate-400 hover:text-[#D4FF00] hover:bg-[#D4FF00]/10 transition-colors"
+                    className="p-2 rounded-full text-muted hover:text-accent hover:bg-accent/[0.04] transition-colors"
                     title={t('conv.setBaseTitle', { code })}
                   >
                     <ArrowRightLeft className="w-4 h-4" />
@@ -289,10 +289,10 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       StorageService.triggerHaptic();
                       onToggleFavorite(code);
                     }}
-                    className={'p-2 rounded-full transition-colors ' + (isFavorite ? 'text-[#D4FF00] hover:bg-[#D4FF00]/15' : 'text-slate-600 hover:text-[#D4FF00] hover:bg-[#D4FF00]/10')}
+                    className={'p-2 rounded-full transition-colors ' + (isFavorite ? 'text-accent hover:bg-accent/[0.06]' : 'text-muted/70 hover:text-accent hover:bg-accent/[0.04]')}
                     title={isFavorite ? t('common.removeFav') : t('common.addFav')}
                   >
-                    <Star className={'w-4 h-4 ' + (isFavorite ? 'fill-[#D4FF00]' : '')} />
+                    <Star className={'w-4 h-4 ' + (isFavorite ? 'fill-accent' : '')} />
                   </button>
 
                   <button
@@ -300,7 +300,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       StorageService.triggerHaptic();
                       onRemovePinnedCurrency(code);
                     }}
-                    className="p-2 rounded-full text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    className="p-2 rounded-full text-muted hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
                     title={t('conv.remove')}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -311,35 +311,35 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               {/* Amount display */}
               <div className="my-3 text-right">
                 <div className="flex items-baseline justify-end gap-1.5">
-                  <span className="font-mono font-black text-3xl text-white tracking-tight">
+                  <span className="font-mono font-black text-3xl text-ink tracking-tight">
                     {formattedTotal}
                   </span>
-                  <span className="text-base font-extrabold text-[#D4FF00]">
+                  <span className="text-base font-extrabold text-accent">
                     {meta.symbol}
                   </span>
                 </div>
 
                 {bankFeePct > 0 && (
-                  <p className="text-xs font-bold text-[#D4FF00] mt-1">
+                  <p className="text-xs font-bold text-accent mt-1">
                     {t('conv.includesFee', { fee: formattedFee, symbol: meta.symbol, pct: pct(bankFeePct) })}
                   </p>
                 )}
               </div>
 
               {/* Footer: Live Rate + Action Buttons */}
-              <div className="pt-3.5 border-t border-white/10 flex items-center justify-between text-xs">
-                <span className="font-mono text-slate-400 text-[11px]">
+              <div className="pt-3.5 border-t border-line/[0.08] flex items-center justify-between text-xs">
+                <span className="font-mono text-muted text-[11px]">
                   1 {baseMeta.code} = {formatRate(rawRate, locale)} {meta.code}
                 </span>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCopyAmount(code, plainTotal)}
-                    className={'flex items-center gap-1 px-3 py-1.5 rounded-[14px] font-bold text-xs transition-all ' + (isCopied ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-[#0d1017] hover:bg-[#1a1f2e] text-slate-300 border border-white/10')}
+                    className={'flex items-center gap-1 px-3 py-1.5 rounded-[14px] font-bold text-xs transition-all ' + (isCopied ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' : 'bg-card hover:bg-inset2 text-ink2 border border-line/[0.08]')}
                   >
                     {isCopied ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
                         <span>{t('conv.copied')}</span>
                       </>
                     ) : (
@@ -355,10 +355,10 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       StorageService.triggerHaptic();
                       onNavigateToTrends(baseCurrency, code);
                     }}
-                    className="p-2 rounded-[14px] bg-[#0d1017] hover:bg-[#1a1f2e] text-slate-300 border border-white/10 transition-colors"
+                    className="p-2 rounded-[14px] bg-card hover:bg-inset2 text-ink2 border border-line/[0.08] transition-colors"
                     title={t('conv.trendTitle')}
                   >
-                    <TrendingUp className="w-3.5 h-3.5 text-[#D4FF00]" />
+                    <TrendingUp className="w-3.5 h-3.5 text-accent" />
                   </button>
                 </div>
               </div>
