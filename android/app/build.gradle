@@ -46,7 +46,9 @@ android {
             if (hasReleaseKey) {
                 signingConfig signingConfigs.release
             }
-            minifyEnabled false
+            // R8: shrink and optimize code (Capacitor ships its own keep rules for plugins)
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
