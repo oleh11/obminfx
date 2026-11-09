@@ -1,0 +1,2 @@
+* Currency pickers no longer slide under the status bar while you search
+* Every currency shows its full name (no more "ANG Currency")

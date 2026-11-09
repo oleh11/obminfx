@@ -1,6 +1,7 @@
 // Framework-free i18n helpers (used by the React provider and by tests).
 import { en, Dict, TKey } from './en';
 import { uk } from './uk';
+import { CURRENCY_NAMES } from '../data/currencyNames';
 import type { Currency, RateSourceId } from '../types/currency';
 
 export type Lang = 'en' | 'uk';
@@ -86,7 +87,8 @@ export function localizeCurrency(c: Currency, lang: Lang): Currency {
   const dict = DICTIONARIES[lang] as Record<string, string>;
   let name = dict['cur.name.' + c.code];
   if (!name) {
-    const fromIntl = c.type === 'fiat' ? displayName(lang, 'currency', c.code) : undefined;
+    const shipped = (CURRENCY_NAMES as Record<string, Record<string, string>>)[lang]?.[c.code];
+    const fromIntl = c.type === 'fiat' ? shipped || displayName(lang, 'currency', c.code) : undefined;
     if (fromIntl && fromIntl.toUpperCase() !== c.code) name = capitalize(fromIntl, lang);
     else if (c.name === c.code + ' Currency') name = translate(lang, 'cur.unknownName', { code: c.code });
     else name = c.name;

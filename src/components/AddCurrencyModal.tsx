@@ -62,7 +62,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className={'w-full max-w-lg bg-card border border-line/[0.08] rounded-t-[32px] sm:rounded-[24px] ' + (compact ? 'max-h-[100dvh] rounded-t-none' : 'max-h-[85dvh]') + ' flex flex-col shadow-2xl overflow-hidden animate-slide-up'}
+        className={'w-full max-w-lg bg-card border border-line/[0.08] rounded-t-[32px] sm:rounded-[24px] ' + (compact ? 'max-h-[100dvh] rounded-t-none safe-area-pt' : 'max-h-[85dvh]') + ' flex flex-col shadow-2xl overflow-hidden animate-slide-up'}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

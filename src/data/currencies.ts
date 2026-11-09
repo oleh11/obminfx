@@ -1,3 +1,4 @@
+import { CURRENCY_NAMES } from "./currencyNames";
 import { Currency, RateSource, RateSourceId } from "../types/currency";
 import { en, TKey } from "../i18n/en";
 
@@ -162,7 +163,7 @@ export function resolveCurrency(code: string): Currency {
 
   // No metadata: ask the platform (ICU) for the name, country, flag and symbol.
   const region = upper.length === 3 && !upper.startsWith("X") ? upper.slice(0, 2) : null;
-  const name = intlName("currency", upper);
+  const name = CURRENCY_NAMES.en[upper] || intlName("currency", upper);
   const country = region ? intlName("region", region) : undefined;
   return {
     code: upper,
