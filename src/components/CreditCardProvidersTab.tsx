@@ -123,16 +123,16 @@ export const CreditCardProvidersTab: React.FC<{
   return (
     <div className="space-y-4 max-w-md mx-auto pb-8">
       {/* Header Banner */}
-      <div className="p-4 rounded-3xl bg-gradient-to-r from-purple-900/60 via-indigo-900/40 to-slate-900 border border-purple-500/30 shadow-lg">
+      <div className="p-4 rounded-3xl bg-gradient-to-r from-violet-100 via-indigo-50 to-white border border-purple-500/30 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-500/40">
+          <div className="p-2.5 rounded-2xl bg-purple-500/20 text-purple-600 border border-purple-500/40">
             <CreditCard className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white tracking-tight">
+            <h2 className="text-base font-bold text-ink tracking-tight">
               Credit Card & Bank Providers
             </h2>
-            <p className="text-xs text-slate-300 mt-0.5">
+            <p className="text-xs text-ink2 mt-0.5">
               Compare Mastercard, Visa & Ukrainian bank foreign fees
             </p>
           </div>
@@ -140,41 +140,41 @@ export const CreditCardProvidersTab: React.FC<{
       </div>
 
       {/* Selected Provider Spotlight Card */}
-      <div className="p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-3">
+      <div className="p-5 rounded-3xl bg-inset border border-line/[0.08] shadow-sm space-y-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{selectedProvider.logo}</span>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-white text-base">{selectedProvider.name}</h3>
-                <span className={"text-[10px] px-2 py-0.5 rounded-full font-bold border " + (selectedProvider.isZeroFee ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" : "bg-amber-500/20 text-amber-300 border-amber-500/30")}>
+                <h3 className="font-extrabold text-ink text-base">{selectedProvider.name}</h3>
+                <span className={"text-[10px] px-2 py-0.5 rounded-full font-bold border " + (selectedProvider.isZeroFee ? "bg-emerald-500/20 text-emerald-600 border-emerald-500/30" : "bg-amber-500/20 text-amber-700 border-amber-500/30")}>
                   {selectedProvider.avgFeePct === 0 ? "0% Free" : "+" + selectedProvider.avgFeePct + "% Fee"}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">{selectedProvider.issuer}</p>
+              <p className="text-xs text-muted">{selectedProvider.issuer}</p>
             </div>
           </div>
         </div>
 
-        <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+        <p className="text-xs text-ink2 leading-relaxed bg-inset p-3 rounded-2xl border border-line/[0.08]">
           {selectedProvider.highlight}
         </p>
 
         <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-            <span className="text-[10px] text-slate-400 uppercase font-bold block">Foreign Markup</span>
-            <span className="font-mono font-bold text-sm text-white">{selectedProvider.avgFeePct}%</span>
+          <div className="p-2.5 rounded-xl bg-inset border border-line/[0.08]">
+            <span className="text-[10px] text-muted uppercase font-bold block">Foreign Markup</span>
+            <span className="font-mono font-bold text-sm text-ink">{selectedProvider.avgFeePct}%</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800">
-            <span className="text-[10px] text-slate-400 uppercase font-bold block">Category</span>
-            <span className="font-bold text-xs text-blue-400 truncate block">{selectedProvider.badge}</span>
+          <div className="p-2.5 rounded-xl bg-inset border border-line/[0.08]">
+            <span className="text-[10px] text-muted uppercase font-bold block">Category</span>
+            <span className="font-bold text-xs text-blue-600 truncate block">{selectedProvider.badge}</span>
           </div>
         </div>
       </div>
 
       {/* Provider List */}
       <div className="space-y-2.5">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted px-1">
           Top Card Networks & Issuers ({CREDIT_CARD_PROVIDERS.length})
         </h3>
 
@@ -187,23 +187,23 @@ export const CreditCardProvidersTab: React.FC<{
                 StorageService.triggerHaptic();
                 setSelectedId(provider.id);
               }}
-              className={"p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between " + (isSelected ? "bg-purple-600/15 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-slate-900/80 border-slate-800 hover:border-slate-700")}
+              className={"p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between " + (isSelected ? "bg-purple-600/15 border-purple-500 shadow-md ring-1 ring-purple-500/30" : "bg-inset border-line/[0.08] hover:border-line/[0.08]")}
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{provider.logo}</span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-white text-sm">{provider.name}</h4>
-                    <span className={"text-[9px] px-1.5 py-0.2 rounded font-extrabold " + (provider.isZeroFee ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-800 text-slate-400")}>
+                    <h4 className="font-bold text-ink text-sm">{provider.name}</h4>
+                    <span className={"text-[9px] px-1.5 py-0.2 rounded font-extrabold " + (provider.isZeroFee ? "bg-emerald-500/20 text-emerald-600" : "bg-inset text-muted")}>
                       {provider.avgFeePct === 0 ? "0% Fee" : "+" + provider.avgFeePct + "%"}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400">{provider.badge}</p>
+                  <p className="text-xs text-muted">{provider.badge}</p>
                 </div>
               </div>
 
               <div className="text-right">
-                <span className={"text-xs font-bold " + (provider.isZeroFee ? "text-emerald-400" : "text-slate-300")}>
+                <span className={"text-xs font-bold " + (provider.isZeroFee ? "text-emerald-600" : "text-ink2")}>
                   {provider.isZeroFee ? "No Fee" : provider.avgFeePct + "%"}
                 </span>
               </div>

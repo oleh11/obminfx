@@ -17,6 +17,10 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       enabled: true,
     },
+    // Dark status bar and navigation bar icons on the light background
+    SystemBars: {
+      style: "LIGHT",
+    },
   },
 };
 

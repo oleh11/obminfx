@@ -1,0 +1,2 @@
+* New: check what your card really charged. Copy the two amounts from your bank app and see the real conversion fee
+* New light design

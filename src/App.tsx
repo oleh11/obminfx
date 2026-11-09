@@ -145,7 +145,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0c12] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen text-ink flex flex-col font-sans selection:bg-black selection:text-white">
       {/* Top Navbar */}
       <Navbar
         activeSourceId={activeSourceId}

@@ -325,6 +325,55 @@ export class RateService {
     return includeMarkup ? midRate * (1 + this.getMarkupPct(rateData.source) / 100) : midRate;
   }
 
+  private static referenceCache = new Map<string, number | null>();
+
+  /** Official rate (card currency per 1 purchase currency) on one day, or null if that source has none */
+  private static async officialRateOn(source: 'nbu' | 'ecb', from: string, to: string, date: string): Promise<number | null> {
+    const key = `${source}:${from}:${to}:${date}`;
+    if (this.referenceCache.has(key)) return this.referenceCache.get(key)!;
+    let rate: number | null = null;
+    try {
+      if (source === 'nbu') {
+        const rates = parseNBURates(await fetchJson(`${NBU_URL}&date=${date.replace(/-/g, '')}`));
+        rate = rates[from] > 0 && rates[to] > 0 ? rates[to] / rates[from] : null;
+      } else {
+        const data = await fetchJson(`${FRANKFURTER_BASE}/${date}?base=${from}&symbols=${to}`);
+        const r = data?.rates?.[to];
+        rate = typeof r === 'number' && r > 0 ? r : null;
+      }
+    } catch (e) {
+      // Network errors aren't cached, so the next try asks again
+      console.warn('Official rate unavailable', source, from, to, date, e);
+      return null;
+    }
+    this.referenceCache.set(key, rate);
+    return rate;
+  }
+
+  /**
+   * Official rates for the given days, for checking what a card charged.
+   * Uses the NBU when either currency is UAH (the rate Ukrainian banks quote against), otherwise the ECB,
+   * and falls back to the other one when the first has no rate for the pair.
+   * Returns null when neither source has the pair for the first date.
+   */
+  public static async getOfficialRates(
+    from: string,
+    to: string,
+    dates: string[]
+  ): Promise<{ source: 'nbu' | 'ecb'; rates: { date: string; rate: number }[] } | null> {
+    if (dates.length === 0 || from === to || NON_FIAT_CODES.includes(from) || NON_FIAT_CODES.includes(to)) return null;
+    const order: ('nbu' | 'ecb')[] = from === 'UAH' || to === 'UAH' ? ['nbu', 'ecb'] : ['ecb', 'nbu'];
+    for (const source of order) {
+      const found = await Promise.all(dates.map(d => this.officialRateOn(source, from, to, d)));
+      if (found[0] === null) continue;
+      const rates = dates
+        .map((date, i) => ({ date, rate: found[i] }))
+        .filter((r): r is { date: string; rate: number } => r.rate !== null);
+      return { source, rates };
+    }
+    return null;
+  }
+
   /**
    * Historical rates from the Frankfurter (ECB) API.
    * Returns null when no history is available for the pair (e.g. UAH, crypto, metals),

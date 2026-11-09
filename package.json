@@ -2,13 +2,13 @@
   "name": "obminfx",
   "description": "Multi-source currency converter with bank fee calculator",
   "private": true,
-  "version": "2.2.2",
+  "version": "2.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "tsx src/tests/verify-calculations.ts && tsx src/tests/verify-i18n.ts && tsx src/tests/verify-currencies.ts"
+    "test": "tsx src/tests/verify-calculations.ts && tsx src/tests/verify-i18n.ts && tsx src/tests/verify-currencies.ts && tsx src/tests/verify-card-cost.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
