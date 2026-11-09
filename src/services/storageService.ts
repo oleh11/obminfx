@@ -1,5 +1,5 @@
 import { RateSourceId } from '../types/currency';
-import { DEFAULT_PINNED_CURRENCIES, AVAILABLE_SOURCES } from '../data/currencies';
+import { DEFAULT_PINNED_CURRENCIES, AVAILABLE_SOURCES, isExcludedCurrency } from '../data/currencies';
 
 const KEYS = {
   PINNED_CURRENCIES: 'app_pinned_currencies_v1',
@@ -19,7 +19,7 @@ export class StorageService {
   static getPinnedCurrencies(): string[] {
     try {
       const stored = localStorage.getItem(KEYS.PINNED_CURRENCIES);
-      if (stored) return JSON.parse(stored);
+      if (stored) return (JSON.parse(stored) as string[]).filter(c => !isExcludedCurrency(c));
     } catch {}
     return DEFAULT_PINNED_CURRENCIES;
   }
@@ -33,7 +33,7 @@ export class StorageService {
   static getFavoriteCurrencies(): string[] {
     try {
       const stored = localStorage.getItem(KEYS.FAVORITE_CURRENCIES);
-      if (stored) return JSON.parse(stored);
+      if (stored) return (JSON.parse(stored) as string[]).filter(c => !isExcludedCurrency(c));
     } catch {}
     return DEFAULT_FAVORITES;
   }
@@ -57,7 +57,8 @@ export class StorageService {
   }
 
   static getBaseCurrency(): string {
-    return localStorage.getItem(KEYS.BASE_CURRENCY) || 'USD';
+    const code = localStorage.getItem(KEYS.BASE_CURRENCY);
+    return code && !isExcludedCurrency(code) ? code : 'USD';
   }
 
   static setBaseCurrency(code: string): void {
@@ -65,7 +66,8 @@ export class StorageService {
   }
 
   static getTargetCurrency(): string {
-    return localStorage.getItem(KEYS.TARGET_CURRENCY) || 'UAH';
+    const code = localStorage.getItem(KEYS.TARGET_CURRENCY);
+    return code && !isExcludedCurrency(code) ? code : 'UAH';
   }
 
   static setTargetCurrency(code: string): void {

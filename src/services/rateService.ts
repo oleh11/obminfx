@@ -1,4 +1,4 @@
-import { resolveCurrency, ALL_CURRENCIES, GLOBAL_CURRENCY_METADATA } from "../data/currencies";
+import { resolveCurrency, ALL_CURRENCIES, GLOBAL_CURRENCY_METADATA, isExcludedCurrency, withoutExcludedRates } from "../data/currencies";
 import { Currency, RateSourceId, ExchangeRateData, HistoricalDataSummary, HistoricalRatePoint } from '../types/currency';
 
 // Offline fallback rates (1 USD = X). Only used when no source can be reached;
@@ -120,13 +120,19 @@ export class RateService {
     }
     const codes = Object.keys(rateData.rates);
     const set = new Set<string>([rateData.base, ...codes, ...Object.keys(GLOBAL_CURRENCY_METADATA)]);
-    return Array.from(set).map(code => resolveCurrency(code));
+    return Array.from(set).filter(code => !isExcludedCurrency(code)).map(code => resolveCurrency(code));
   }
 
   /**
    * Fetches exchange rates for the selected source with caching and offline fallback
    */
   public static async getRates(sourceId: RateSourceId, forceRefresh: boolean = false): Promise<ExchangeRateData> {
+    // Filter here so excluded currencies never come back, whether the rates are fresh, cached or older cache
+    const data = await this.loadRates(sourceId, forceRefresh);
+    return { ...data, rates: withoutExcludedRates(data.rates) };
+  }
+
+  private static async loadRates(sourceId: RateSourceId, forceRefresh: boolean): Promise<ExchangeRateData> {
     const cached = this.cachedData[sourceId];
     if (!forceRefresh && cached) {
       return cached;
