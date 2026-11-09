@@ -71,6 +71,7 @@ const FRANKFURTER_BASE = 'https://api.frankfurter.dev/v1';
 const ECB_URL = `${FRANKFURTER_BASE}/latest?base=USD`;
 const OPEN_MARKET_URL = 'https://open.er-api.com/v6/latest/USD';
 const NBU_URL = 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json';
+const NBU_RANGE_URL = 'https://bank.gov.ua/NBU_Exchange/exchange_site';
 const COINGECKO_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether&vs_currencies=usd';
 const METAL_PRICE_URL = (code: string) => `https://api.gold-api.com/price/${code}`;
 
@@ -105,6 +106,33 @@ export function parseNBURates(list: unknown): Record<string, number> {
     if (code !== 'USD') rates[code] = uahPerUsd / uah;
   }
   return rates;
+}
+
+/** NBU history list ({exchangedate: 'DD.MM.YYYY', rate, units}) → points, oldest first */
+export function parseNBUHistory(list: unknown): HistoricalRatePoint[] {
+  if (!Array.isArray(list)) return [];
+  const points: HistoricalRatePoint[] = [];
+  for (const item of list) {
+    const m = typeof item?.exchangedate === 'string' ? /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(item.exchangedate) : null;
+    const units = typeof item?.units === 'number' && item.units > 0 ? item.units : 1;
+    const perUnit = typeof item?.rate_per_unit === 'number' ? item.rate_per_unit : typeof item?.rate === 'number' ? item.rate / units : NaN;
+    if (m && perUnit > 0) points.push({ date: `${m[3]}-${m[2]}-${m[1]}`, rate: perUnit });
+  }
+  return points.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** Up to `max` evenly spaced YYYY-MM-DD days from start to end, always including both ends */
+export function sampleDays(start: string, end: string, max: number): string[] {
+  const s = Date.parse(start + 'T12:00:00Z');
+  const e = Date.parse(end + 'T12:00:00Z');
+  if (!(e >= s) || max < 2) return [end];
+  const totalDays = Math.round((e - s) / 86400000);
+  const steps = Math.min(max - 1, totalDays);
+  const days = new Set<string>();
+  for (let i = 0; i <= steps; i++) {
+    days.add(new Date(s + Math.round((totalDays * i) / Math.max(steps, 1)) * 86400000).toISOString().slice(0, 10));
+  }
+  return [...days];
 }
 
 export class RateService {
@@ -374,10 +402,46 @@ export class RateService {
     return null;
   }
 
+  /** Daily ECB history for a pair (Frankfurter) */
+  private static async ecbHistory(from: string, to: string, start: string, end: string): Promise<HistoricalRatePoint[]> {
+    const data = await fetchJson(`${FRANKFURTER_BASE}/${start}..${end}?base=${from}&symbols=${to}`);
+    return Object.entries(data?.rates || {})
+      .map(([date, rateObj]: [string, any]) => ({ date, rate: rateObj?.[to] }))
+      .filter((p): p is HistoricalRatePoint => typeof p.rate === 'number' && p.rate > 0)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
   /**
-   * Historical rates from the Frankfurter (ECB) API.
-   * Returns null when no history is available for the pair (e.g. UAH, crypto, metals),
-   * rather than making up a series.
+   * NBU history: UAH per 1 unit of `code`, one point per day.
+   * Uses the NBU range endpoint (one request). It sends no CORS header, which only matters in a browser:
+   * on Android, Capacitor makes the request natively. In a browser it falls back to sampled single-day requests.
+   */
+  private static async nbuHistory(code: string, start: string, end: string): Promise<HistoricalRatePoint[]> {
+    const compact = (d: string) => d.replace(/-/g, '');
+    try {
+      const list = await fetchJson(
+        `${NBU_RANGE_URL}?start=${compact(start)}&end=${compact(end)}&valcode=${code.toLowerCase()}&sort=exchangedate&order=asc&json`
+      );
+      const points = parseNBUHistory(list);
+      if (points.length > 0) return points;
+    } catch (e) {
+      console.warn('NBU range history unavailable, sampling single days', code, e);
+    }
+    const days = sampleDays(start, end, 40);
+    const found = await Promise.all(days.map(async date => {
+      try {
+        const list = await fetchJson(`${NBU_URL}&valcode=${code}&date=${compact(date)}`);
+        return parseNBUHistory(list)[0] ?? null;
+      } catch {
+        return null;
+      }
+    }));
+    return found.filter((p): p is HistoricalRatePoint => p !== null).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /**
+   * Historical rates: NBU when one side is UAH (the ECB doesn't publish the hryvnia), otherwise ECB.
+   * Returns null when no history is available for the pair (e.g. crypto, metals), rather than making up a series.
    */
   public static async getHistoricalRates(
     fromCurrency: string,
@@ -397,11 +461,14 @@ export class RateService {
 
     let points: HistoricalRatePoint[] = [];
     try {
-      const data = await fetchJson(`${FRANKFURTER_BASE}/${startStr}..${endStr}?base=${fromCurrency}&symbols=${toCurrency}`);
-      points = Object.entries(data?.rates || {})
-        .map(([date, rateObj]: [string, any]) => ({ date, rate: rateObj?.[toCurrency] }))
-        .filter((p): p is HistoricalRatePoint => typeof p.rate === 'number' && p.rate > 0)
-        .sort((a, b) => a.date.localeCompare(b.date));
+      if (fromCurrency === 'UAH' || toCurrency === 'UAH') {
+        const other = fromCurrency === 'UAH' ? toCurrency : fromCurrency;
+        const uahPer = await this.nbuHistory(other, startStr, endStr);
+        // NBU gives UAH per unit; flip it for UAH → other
+        points = fromCurrency === 'UAH' ? uahPer.map(p => ({ date: p.date, rate: 1 / p.rate })) : uahPer;
+      } else {
+        points = await this.ecbHistory(fromCurrency, toCurrency, startStr, endStr);
+      }
     } catch (e) {
       console.warn('Historical rates unavailable for', fromCurrency, toCurrency, e);
       return null;
