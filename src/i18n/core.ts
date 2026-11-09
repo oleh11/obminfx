@@ -96,6 +96,8 @@ export function localizeCurrency(c: Currency, lang: Lang): Currency {
   if (c.type === 'crypto') country = translate(lang, 'cur.country.crypto');
   else if (c.type === 'commodity') country = translate(lang, 'cur.country.commodity');
   else if (c.code === 'EUR') country = translate(lang, 'cur.country.eurozone');
+  else if (dict['cur.country.' + c.code]) country = dict['cur.country.' + c.code];
+  else if (c.code.startsWith('X')) country = c.country;
   else {
     const region = c.code.slice(0, 2);
     const fromIntl = displayName(lang, 'region', region);

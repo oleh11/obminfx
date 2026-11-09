@@ -102,7 +102,28 @@ export const GLOBAL_CURRENCY_METADATA: Record<string, Partial<Currency>> = {
   NAD: { name: "Namibian Dollar", symbol: "N$", flag: "🇳🇦", country: "Namibia", decimalPlaces: 2 },
   ZMW: { name: "Zambian Kwacha", symbol: "ZK", flag: "🇿🇲", country: "Zambia", decimalPlaces: 2 },
 
+  // Other common currencies (the rest are named via Intl.DisplayNames in resolveCurrency)
+  RUB: { name: "Russian Ruble", symbol: "₽", flag: "🇷🇺", country: "Russia", decimalPlaces: 2 },
+  BYN: { name: "Belarusian Ruble", symbol: "Br", flag: "🇧🇾", country: "Belarus", decimalPlaces: 2 },
+
+  // Codes that Intl.DisplayNames doesn't name (local issues pegged to another currency)
+  FOK: { name: "Faroese Króna", symbol: "kr", flag: "🇫🇴", country: "Faroe Islands", decimalPlaces: 2 },
+  GGP: { name: "Guernsey Pound", symbol: "£", flag: "🇬🇬", country: "Guernsey", decimalPlaces: 2 },
+  IMP: { name: "Manx Pound", symbol: "£", flag: "🇮🇲", country: "Isle of Man", decimalPlaces: 2 },
+  JEP: { name: "Jersey Pound", symbol: "£", flag: "🇯🇪", country: "Jersey", decimalPlaces: 2 },
+  KID: { name: "Kiribati Dollar", symbol: "$", flag: "🇰🇮", country: "Kiribati", decimalPlaces: 2 },
+  TVD: { name: "Tuvaluan Dollar", symbol: "$", flag: "🇹🇻", country: "Tuvalu", decimalPlaces: 2 },
+
+  // Multi-country currencies: their code doesn't start with a country code
+  XAF: { name: "Central African CFA Franc", symbol: "FCFA", flag: "🌍", country: "Central Africa", decimalPlaces: 0 },
+  XOF: { name: "West African CFA Franc", symbol: "CFA", flag: "🌍", country: "West Africa", decimalPlaces: 0 },
+  XCD: { name: "East Caribbean Dollar", symbol: "EC$", flag: "🌎", country: "Eastern Caribbean", decimalPlaces: 2 },
+  XCG: { name: "Caribbean Guilder", symbol: "Cg", flag: "🌎", country: "Curaçao & Sint Maarten", decimalPlaces: 2 },
+  XPF: { name: "CFP Franc", symbol: "₣", flag: "🌏", country: "French Pacific", decimalPlaces: 0 },
+  XDR: { name: "Special Drawing Rights", symbol: "XDR", flag: "🌐", country: "IMF", decimalPlaces: 2 },
+
   // Crypto & Commodities
+  USDT: { name: "Tether", symbol: "₮", flag: "🟢", country: "Global Crypto", type: "crypto", decimalPlaces: 4 },
   BTC: { name: "Bitcoin", symbol: "₿", flag: "🪙", country: "Global Crypto", type: "crypto", decimalPlaces: 6 },
   ETH: { name: "Ethereum", symbol: "Ξ", flag: "🔷", country: "Global Crypto", type: "crypto", decimalPlaces: 6 },
   SOL: { name: "Solana", symbol: "◎", flag: "🟣", country: "Global Crypto", type: "crypto", decimalPlaces: 4 },
@@ -128,15 +149,49 @@ export function resolveCurrency(code: string): Currency {
     };
   }
 
+  // No metadata: ask the platform (ICU) for the name, country, flag and symbol.
+  const region = upper.length === 3 && !upper.startsWith("X") ? upper.slice(0, 2) : null;
+  const name = intlName("currency", upper);
+  const country = region ? intlName("region", region) : undefined;
   return {
     code: upper,
-    name: upper + " Currency",
-    symbol: upper,
-    flag: "🌐",
-    country: "Global",
+    name: name || upper + " Currency",
+    symbol: intlSymbol(upper) || upper,
+    flag: region && country ? flagEmoji(region) : "🌐",
+    country: country || "Global",
     type: "fiat",
     decimalPlaces: 2
   };
+}
+
+const intlCache: Record<string, any> = {};
+/** English display name from Intl.DisplayNames, or undefined when the platform doesn't know the code. */
+function intlName(type: "currency" | "region", code: string): string | undefined {
+  try {
+    const DN = (Intl as any).DisplayNames;
+    if (!DN) return undefined;
+    intlCache[type] = intlCache[type] || new DN(["en"], { type, fallback: "code" });
+    const value: string | undefined = intlCache[type].of(code);
+    return value && value.toUpperCase() !== code ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function intlSymbol(code: string): string | undefined {
+  try {
+    const part = new Intl.NumberFormat("en", { style: "currency", currency: code, currencyDisplay: "narrowSymbol" })
+      .formatToParts(0)
+      .find(p => p.type === "currency");
+    return part?.value;
+  } catch {
+    return undefined;
+  }
+}
+
+/** "PL" -> 🇵🇱 (regional indicator symbols). */
+function flagEmoji(region: string): string {
+  return String.fromCodePoint(...[...region].map(ch => 0x1f1e6 + ch.charCodeAt(0) - 65));
 }
 
 // Initial full list of all 160+ known world currencies
