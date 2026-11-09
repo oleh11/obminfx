@@ -1,0 +1,4 @@
+* Dark theme: follows your phone, or pick it in Settings
+* Share a bank notification or SMS to ObminFX to check what your card charged
+* Save your cards and see which is cheapest for each purchase
+* Hryvnia charts in Trends
