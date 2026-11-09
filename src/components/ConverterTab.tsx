@@ -4,7 +4,7 @@ import {
   TrendingUp, Percent, Star, Sparkles, ChevronRight, ChevronDown, Clock, ShieldCheck 
 } from 'lucide-react';
 import { ExchangeRateData } from '../types/currency';
-import { getCurrencyMeta } from '../data/currencies';
+import { useT } from '../i18n';
 import { RateService } from '../services/rateService';
 import { formatCurrencyAmount, calculateBankFeeConversion, formatRate } from '../services/feeCalculator';
 import { StorageService } from '../services/storageService';
@@ -48,10 +48,11 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
   onNavigateToTrends,
   lastUpdatedTime
 }) => {
+  const { t, locale, pct, currency } = useT();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [showFeeBar, setShowFeeBar] = useState<boolean>(false);
 
-  const baseMeta = getCurrencyMeta(baseCurrency);
+  const baseMeta = currency(baseCurrency);
   const numericAmount = parseFloat(baseAmount) || 0;
 
   // Sort pinned currencies: Favorites first, then Alphabetical A-Z
@@ -66,9 +67,10 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
     });
   }, [pinnedCurrencies, baseCurrency, favoriteCurrencies]);
 
-  const handleCopyAmount = (code: string, formattedAmount: string) => {
+  // Copies a plain number (e.g. 1234.56) so it pastes cleanly into other apps
+  const handleCopyAmount = (code: string, plainAmount: string) => {
     StorageService.triggerHaptic();
-    navigator.clipboard.writeText(formattedAmount.replace(/,/g, ''));
+    navigator.clipboard.writeText(plainAmount);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
   };
@@ -87,12 +89,12 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               <ShieldCheck className="w-3.5 h-3.5" />
             </div>
             <span className="text-xs font-black tracking-wide text-white uppercase">
-              Currency Pass &bull; {baseMeta.code}
+              {t('conv.pass')} &bull; {baseMeta.code}
             </span>
           </div>
 
           <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-white/5 text-slate-300 border border-white/10">
-            {lastUpdatedTime ? lastUpdatedTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'}
+            {lastUpdatedTime ? lastUpdatedTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : t('conv.live')}
           </span>
         </div>
 
@@ -104,17 +106,17 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               StorageService.triggerHaptic();
               onOpenSelectBaseModal();
             }}
-            className="flex items-center gap-3 px-4 py-2.5 rounded-[22px] bg-[#0d1017] hover:bg-[#1a1f2e] active:scale-98 border border-white/10 hover:border-[#D4FF00]/40 text-white transition-all shadow-sm group"
-            title="Change default base currency"
+            className="flex items-center gap-3 px-4 py-2.5 min-w-0 rounded-[22px] bg-[#0d1017] hover:bg-[#1a1f2e] active:scale-98 border border-white/10 hover:border-[#D4FF00]/40 text-white transition-all shadow-sm group"
+            title={t('conv.changeBaseTitle')}
           >
             <span className="text-2xl">{baseMeta.flag}</span>
-            <div className="text-left">
+            <div className="text-left min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-base text-slate-100 group-hover:text-[#D4FF00] transition-colors">{baseMeta.code}</span>
                 <ChevronDown className="w-4 h-4 text-[#D4FF00] transition-transform group-hover:translate-y-0.5" />
               </div>
               <span className="text-[11px] text-slate-400 font-medium block truncate max-w-[140px]">
-                {baseMeta.country} &bull; Tap to change
+                {baseMeta.country} &bull; {t('conv.tapToChange')}
               </span>
             </div>
           </button>
@@ -125,10 +127,10 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               StorageService.triggerHaptic();
               setShowFeeBar(!showFeeBar);
             }}
-            className={'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-extrabold transition-all border ' + (bankFeePct > 0 ? 'bg-[#D4FF00]/15 text-[#D4FF00] border-[#D4FF00]/30 shadow-sm' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30')}
+            className={'flex items-center gap-1.5 px-3.5 py-2 shrink-0 whitespace-nowrap rounded-full text-xs font-extrabold transition-all border ' + (bankFeePct > 0 ? 'bg-[#D4FF00]/15 text-[#D4FF00] border-[#D4FF00]/30 shadow-sm' : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30')}
           >
             <Percent className="w-3.5 h-3.5" />
-            <span>{bankFeePct > 0 ? `${bankFeePct}% Bank Fee` : '0% No Fee'}</span>
+            <span>{bankFeePct > 0 ? t('conv.feePill', { fee: pct(bankFeePct) }) : t('conv.noFee')}</span>
           </button>
         </div>
 
@@ -151,7 +153,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
           <div className="flex items-center justify-between text-xs text-slate-400 font-medium mt-2 px-2">
             <span className="flex items-center gap-1 text-[11px] text-slate-400 font-mono">
               <Clock className="w-3 h-3 text-[#D4FF00]" />
-              {lastUpdatedTime ? `Live: ${lastUpdatedTime.toLocaleTimeString()}` : 'Connecting...'}
+              {lastUpdatedTime ? t('conv.liveAt', { time: lastUpdatedTime.toLocaleTimeString(locale) }) : t('conv.connecting')}
             </span>
             <span>{baseMeta.name}</span>
           </div>
@@ -162,13 +164,13 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
           <div className="mt-4 pt-4 border-t border-white/10 animate-fade-in space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Bank Surcharge Markup
+                {t('conv.surcharge')}
               </span>
               <button
                 onClick={onNavigateToFeeCalc}
                 className="text-xs font-bold text-[#D4FF00] hover:underline flex items-center gap-0.5"
               >
-                <span>Full Simulator</span>
+                <span>{t('conv.fullSimulator')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -185,7 +187,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                     }}
                     className={'py-2.5 rounded-[18px] text-xs font-extrabold border transition-all ' + (isSelected ? 'bg-[#D4FF00]/20 text-[#D4FF00] border-[#D4FF00]/40 shadow-sm' : 'bg-[#0d1017] text-slate-300 border-white/10 hover:bg-[#1a1f2e]')}
                   >
-                    {fee === 0 ? '0% Free' : fee === 2.0 ? '2% Avg' : `${fee}%`}
+                    {fee === 0 ? t('common.feeFree') : fee === 2.0 ? t('common.feeAvg') : pct(fee)}
                   </button>
                 );
               })}
@@ -195,13 +197,13 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
       </div>
 
       {/* Watchlist Section Header */}
-      <div className="flex items-center justify-between px-2 pt-1">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-2 px-2 pt-1">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs font-black uppercase tracking-wider text-slate-300">
-            Conversions (⭐ Favorites Top)
+            {t('conv.conversions')}
           </span>
-          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#161a24] font-bold text-[#D4FF00] border border-[#D4FF00]/20">
-            {sortedCurrencies.length} active
+          <span className="shrink-0 whitespace-nowrap text-[11px] px-2.5 py-0.5 rounded-full bg-[#161a24] font-bold text-[#D4FF00] border border-[#D4FF00]/20">
+            {t('conv.activeCount', { n: sortedCurrencies.length })}
           </span>
         </div>
 
@@ -210,17 +212,17 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
             StorageService.triggerHaptic();
             onOpenAddModal();
           }}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#D4FF00] hover:bg-[#c2ea00] active:scale-95 text-slate-950 text-xs font-black transition-all shadow-md shadow-[#D4FF00]/20"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 shrink-0 whitespace-nowrap rounded-full bg-[#D4FF00] hover:bg-[#c2ea00] active:scale-95 text-slate-950 text-xs font-black transition-all shadow-md shadow-[#D4FF00]/20"
         >
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
-          <span>Add Currency</span>
+          <span>{t('conv.addCurrency')}</span>
         </button>
       </div>
 
       {/* Converted Currencies Diia Cards */}
       <div className="space-y-3">
         {sortedCurrencies.map((code) => {
-          const meta = getCurrencyMeta(code);
+          const meta = currency(code);
           const rawRate = rateData ? RateService.calculateRate(baseCurrency, code, rateData) : 1.0;
           const isFavorite = favoriteCurrencies.includes(code);
 
@@ -232,8 +234,9 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
             bankFeePct
           );
 
-          const formattedTotal = formatCurrencyAmount(feeCalc.totalBilledAmount, meta.decimalPlaces);
-          const formattedFee = formatCurrencyAmount(feeCalc.bankFeeAmount, meta.decimalPlaces);
+          const formattedTotal = formatCurrencyAmount(feeCalc.totalBilledAmount, meta.decimalPlaces, false, '', locale);
+          const plainTotal = formatCurrencyAmount(feeCalc.totalBilledAmount, meta.decimalPlaces).replace(/,/g, '');
+          const formattedFee = formatCurrencyAmount(feeCalc.bankFeeAmount, meta.decimalPlaces, false, '', locale);
           const isCopied = copiedCode === code;
 
           return (
@@ -249,7 +252,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                     StorageService.triggerHaptic();
                     onSelectBaseCurrency(code);
                   }}
-                  title={'Click to set ' + code + ' as default base currency'}
+                  title={t('conv.setBaseTitle', { code })}
                 >
                   <div className="w-12 h-12 rounded-[20px] bg-[#0d1017] border border-white/10 group-hover:border-[#D4FF00]/40 flex items-center justify-center text-2xl shadow-inner transition-colors">
                     {meta.flag}
@@ -276,7 +279,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       onSelectBaseCurrency(code);
                     }}
                     className="p-2 rounded-full text-slate-400 hover:text-[#D4FF00] hover:bg-[#D4FF00]/10 transition-colors"
-                    title={'Set ' + code + ' as default base currency'}
+                    title={t('conv.setBaseTitle', { code })}
                   >
                     <ArrowRightLeft className="w-4 h-4" />
                   </button>
@@ -287,7 +290,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       onToggleFavorite(code);
                     }}
                     className={'p-2 rounded-full transition-colors ' + (isFavorite ? 'text-[#D4FF00] hover:bg-[#D4FF00]/15' : 'text-slate-600 hover:text-[#D4FF00] hover:bg-[#D4FF00]/10')}
-                    title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                    title={isFavorite ? t('common.removeFav') : t('common.addFav')}
                   >
                     <Star className={'w-4 h-4 ' + (isFavorite ? 'fill-[#D4FF00]' : '')} />
                   </button>
@@ -298,7 +301,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       onRemovePinnedCurrency(code);
                     }}
                     className="p-2 rounded-full text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                    title="Remove from list"
+                    title={t('conv.remove')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -318,7 +321,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
 
                 {bankFeePct > 0 && (
                   <p className="text-xs font-bold text-[#D4FF00] mt-1">
-                    Includes +{formattedFee} {meta.symbol} ({bankFeePct}%) bank fee
+                    {t('conv.includesFee', { fee: formattedFee, symbol: meta.symbol, pct: pct(bankFeePct) })}
                   </p>
                 )}
               </div>
@@ -326,23 +329,23 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
               {/* Footer: Live Rate + Action Buttons */}
               <div className="pt-3.5 border-t border-white/10 flex items-center justify-between text-xs">
                 <span className="font-mono text-slate-400 text-[11px]">
-                  1 {baseMeta.code} = {formatRate(rawRate)} {meta.code}
+                  1 {baseMeta.code} = {formatRate(rawRate, locale)} {meta.code}
                 </span>
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleCopyAmount(code, formattedTotal)}
+                    onClick={() => handleCopyAmount(code, plainTotal)}
                     className={'flex items-center gap-1 px-3 py-1.5 rounded-[14px] font-bold text-xs transition-all ' + (isCopied ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-[#0d1017] hover:bg-[#1a1f2e] text-slate-300 border border-white/10')}
                   >
                     {isCopied ? (
                       <>
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Copied</span>
+                        <span>{t('conv.copied')}</span>
                       </>
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5" />
-                        <span>Copy</span>
+                        <span>{t('conv.copy')}</span>
                       </>
                     )}
                   </button>
@@ -353,7 +356,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                       onNavigateToTrends(baseCurrency, code);
                     }}
                     className="p-2 rounded-[14px] bg-[#0d1017] hover:bg-[#1a1f2e] text-slate-300 border border-white/10 transition-colors"
-                    title="View historical trend chart"
+                    title={t('conv.trendTitle')}
                   >
                     <TrendingUp className="w-3.5 h-3.5 text-[#D4FF00]" />
                   </button>

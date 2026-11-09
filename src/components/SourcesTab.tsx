@@ -4,7 +4,8 @@ import {
   Check, RefreshCw, Layers, Sliders, ExternalLink, ArrowRightLeft, Info 
 } from 'lucide-react';
 import { RateSourceId, RateSource, ExchangeRateData } from '../types/currency';
-import { AVAILABLE_SOURCES, ALL_CURRENCIES, getCurrencyMeta } from '../data/currencies';
+import { AVAILABLE_SOURCES, ALL_CURRENCIES } from '../data/currencies';
+import { useT } from '../i18n';
 import { RateService, CUSTOM_SPREAD_STORAGE_KEY, DEFAULT_CUSTOM_SPREAD_PCT } from '../services/rateService';
 import { StorageService } from '../services/storageService';
 import { formatCurrencyAmount, formatRate } from '../services/feeCalculator';
@@ -28,6 +29,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
   isRefreshing,
   rateData
 }) => {
+  const { t, locale, currency, localize, source: sourceInfo } = useT();
   const [customSpread, setCustomSpread] = useState<string>(
     localStorage.getItem(CUSTOM_SPREAD_STORAGE_KEY) || String(DEFAULT_CUSTOM_SPREAD_PCT)
   );
@@ -56,8 +58,8 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
     }
   };
 
-  const baseMeta = getCurrencyMeta(compareBase);
-  const targetMeta = getCurrencyMeta(compareTarget);
+  const baseMeta = currency(compareBase);
+  const targetMeta = currency(compareTarget);
 
   return (
     <div className="space-y-4 w-full pb-8">
@@ -69,10 +71,10 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           </div>
           <div>
             <h2 className="text-base font-black text-white tracking-tight">
-              Exchange Rate Sources
+              {t('src.title')}
             </h2>
             <p className="text-xs text-slate-400 font-medium mt-0.5">
-              ECB, NBU, Mastercard, Visa & Global Open Market rates
+              {t('src.subtitle')}
             </p>
           </div>
         </div>
@@ -83,7 +85,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           }}
           disabled={isRefreshing}
           className="p-2.5 rounded-full bg-[#0e111a] hover:bg-[#1a1f2e] text-slate-300 border border-white/5 transition-all disabled:opacity-50"
-          title="Refresh all source rates"
+          title={t('src.refreshAll')}
         >
           <RefreshCw className={'w-4 h-4 ' + (isRefreshing ? 'animate-spin text-[#E2F163]' : '')} />
         </button>
@@ -94,7 +96,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-white flex items-center gap-2">
             <Sliders className="w-4 h-4 text-[#E2F163]" />
-            Live Provider Comparison
+            {t('src.comparison')}
           </h3>
           <span className="text-[11px] text-[#E2F163] font-mono font-bold">1 {compareBase} &rarr; {compareTarget}</span>
         </div>
@@ -108,7 +110,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           >
             {[...ALL_CURRENCIES].sort((a, b) => a.code.localeCompare(b.code)).map((c) => (
               <option key={'src-base-' + c.code} value={c.code}>
-                {c.flag} {c.code} ({c.name})
+                {c.flag} {c.code} ({localize(c).name})
               </option>
             ))}
           </select>
@@ -119,7 +121,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           >
             {[...ALL_CURRENCIES].sort((a, b) => a.code.localeCompare(b.code)).map((c) => (
               <option key={'src-target-' + c.code} value={c.code}>
-                {c.flag} {c.code} ({c.name})
+                {c.flag} {c.code} ({localize(c).name})
               </option>
             ))}
           </select>
@@ -129,6 +131,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
         <div className="divide-y divide-white/5 border border-white/5 rounded-[22px] overflow-hidden bg-[#0e111a]/80">
           {AVAILABLE_SOURCES.map((source) => {
             const isSelected = source.id === activeSourceId;
+            const info = sourceInfo(source.id);
             const midRate = rateData
               ? RateService.calculateRate(compareBase, compareTarget, rateData, false)
               : NaN;
@@ -153,23 +156,23 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-sm text-white">{source.shortName}</span>
+                      <span className="font-extrabold text-sm text-white">{info.shortName}</span>
                       {isSelected && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#E2F163] text-slate-950 font-black uppercase">
-                          Active
+                          {t('src.active')}
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-slate-400">{source.badge}</span>
+                    <span className="text-[11px] text-slate-400">{info.badge}</span>
                   </div>
                 </div>
 
                 <div className="text-right font-mono">
                   <div className="font-black text-sm text-white">
-                    {formatRate(rate)} {targetMeta.symbol}
+                    {formatRate(rate, locale)} {targetMeta.symbol}
                   </div>
                   <div className="text-[10px] text-slate-400">
-                    {source.updateFrequency}
+                    {info.updateFrequency}
                   </div>
                 </div>
               </div>
@@ -181,11 +184,12 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
       {/* Provider Details Cards */}
       <div className="space-y-3">
         <h3 className="text-xs font-black uppercase tracking-wider text-slate-300 px-1">
-          Available Rate Benchmarks
+          {t('src.benchmarks')}
         </h3>
 
         {AVAILABLE_SOURCES.map((source) => {
           const isSelected = source.id === activeSourceId;
+          const info = sourceInfo(source.id);
           return (
             <div
               key={'card-' + source.id}
@@ -197,15 +201,15 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
                     {getSourceIcon(source.id)}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-black text-white text-sm">{source.name}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-black text-white text-sm">{info.name}</h4>
                       {source.isOfficial && (
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#E2F163]/15 text-[#E2F163] border border-[#E2F163]/30">
-                          Official
+                          {t('src.official')}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">{source.description}</p>
+                    <p className="text-xs text-slate-300 mt-1 leading-relaxed">{info.description}</p>
                   </div>
                 </div>
 
@@ -216,13 +220,13 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
                   }}
                   className={'px-4 py-1.5 rounded-full text-xs font-black transition-all shrink-0 active:scale-95 ' + (isSelected ? 'bg-[#E2F163] text-slate-950 shadow-md shadow-[#E2F163]/20' : 'bg-[#1e2333] text-slate-300 hover:bg-[#2a3147] border border-white/5')}
                 >
-                  {isSelected ? 'Active' : 'Select'}
+                  {isSelected ? t('src.active') : t('common.select')}
                 </button>
               </div>
 
               {source.id === 'custom_bank' && (
                 <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-bold">Your Bank FX Spread Markup:</span>
+                  <span className="text-slate-300 font-bold">{t('src.customSpread')}</span>
                   <div className="flex items-center gap-1.5">
                     <input
                       type="number"

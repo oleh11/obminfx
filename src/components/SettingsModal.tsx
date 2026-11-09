@@ -1,7 +1,9 @@
 import React from 'react';
 import { StorageService } from '../services/storageService';
-import { Percent, ShieldAlert, Info, X, ArrowRightLeft } from 'lucide-react';
-import { getCurrencyMeta } from '../data/currencies';
+import { Percent, ShieldAlert, Info, X, ArrowRightLeft, Languages } from 'lucide-react';
+import { useT, LANGS, Lang } from '../i18n';
+
+const LANGUAGE_NAMES: Record<Lang, string> = { en: 'English', uk: 'Українська' };
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -28,9 +30,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onResetDefaults,
   onOpenSelectBaseModal
 }) => {
+  const { t, pct, currency, lang, setLang } = useT();
   if (!isOpen) return null;
 
-  const baseMeta = getCurrencyMeta(baseCurrency);
+  const baseMeta = currency(baseCurrency);
 
   return (
     <div 
@@ -44,8 +47,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Modal Header */}
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-white">App Settings</h2>
-            <p className="text-xs text-slate-400">Configure ObminFX preferences & defaults</p>
+            <h2 className="text-lg font-bold text-white">{t('settings.title')}</h2>
+            <p className="text-xs text-slate-400">{t('settings.subtitle')}</p>
           </div>
           <button
             onClick={() => {
@@ -60,12 +63,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Settings Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Language */}
+          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <Languages className="w-4 h-4 text-[#D4FF00]" />
+              {t('settings.language')}
+            </h3>
+            <div className="grid grid-cols-2 gap-1.5">
+              {LANGS.map((code) => (
+                <button
+                  key={code}
+                  onClick={() => {
+                    StorageService.triggerHaptic();
+                    setLang(code);
+                  }}
+                  className={'py-2 rounded-xl text-xs font-extrabold border transition-all ' + (lang === code ? 'bg-[#D4FF00]/20 text-[#D4FF00] border-[#D4FF00]/60' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700')}
+                >
+                  {LANGUAGE_NAMES[code]}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Default Base Currency Configuration */}
           <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2.5">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
                 <ArrowRightLeft className="w-4 h-4 text-[#D4FF00]" />
-                Default Base Currency
+                {t('settings.defaultBase')}
               </h3>
               <button
                 onClick={() => {
@@ -75,7 +100,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 }}
                 className="text-xs font-bold text-[#D4FF00] hover:underline"
               >
-                Change
+                {t('settings.change')}
               </button>
             </div>
             <div 
@@ -104,10 +129,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
                 <Percent className="w-4 h-4 text-amber-400" />
-                Default Bank Fee
+                {t('settings.defaultFee')}
               </h3>
               <span className="text-xs font-mono font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-lg">
-                {bankFeePct.toFixed(1)}%
+                {pct(bankFeePct, 1)}
               </span>
             </div>
 
@@ -121,7 +146,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   }}
                   className={'py-2 rounded-xl text-xs font-extrabold border transition-all ' + (Math.abs(bankFeePct - fee) < 0.05 ? 'bg-amber-500/20 text-amber-300 border-amber-500 shadow-md ring-1 ring-amber-500/40' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700')}
                 >
-                  {fee === 0 ? '0% Free' : fee === 2.0 ? '2% Avg' : fee + '%'}
+                  {fee === 0 ? t('common.feeFree') : fee === 2.0 ? t('common.feeAvg') : pct(fee)}
                 </button>
               ))}
             </div>
@@ -130,10 +155,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Reset Defaults */}
           <div className="p-4 rounded-2xl border border-red-900/30 bg-red-950/20">
             <h4 className="text-sm font-bold text-white mb-1 flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4 text-red-400" /> Reset Watchlist
+              <ShieldAlert className="w-4 h-4 text-red-400" /> {t('settings.reset')}
             </h4>
             <p className="text-xs text-slate-400 mb-3">
-              Restore default pinned currencies (USD, EUR, UAH, GBP, PLN, etc.) and clear cached rates.
+              {t('settings.resetBody')}
             </p>
             <button
               onClick={() => {
@@ -143,20 +168,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }}
               className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold text-xs transition-all shadow-md shadow-red-600/20"
             >
-              Reset to Defaults
+              {t('settings.resetButton')}
             </button>
           </div>
 
           {/* About ObminFX */}
           <div className="p-4 rounded-2xl border border-slate-800 bg-slate-950/60">
             <h3 className="text-sm font-bold text-white mb-1.5 flex items-center gap-1.5">
-              <Info className="w-4 h-4 text-amber-400" /> About ObminFX
+              <Info className="w-4 h-4 text-amber-400" /> {t('settings.about')}
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed mb-2">
-              <strong>ObminFX</strong> (from Ukrainian <em>Обмін</em> • Exchange) is a modern Android currency converter & bank fee calculator built with Material Design 3 guidelines.
+              <strong>ObminFX</strong> {t('settings.aboutBody1')}
             </p>
             <p className="text-[11px] text-slate-400">
-              Supports live European Central Bank (ECB) benchmarks, National Bank of Ukraine (NBU) rates, Mastercard & Visa FX settlement spreads, and custom bank fee calculations.
+              {t('settings.aboutBody2')}
             </p>
           </div>
         </div>
@@ -170,7 +195,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }}
             className="px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-white font-bold text-xs transition-all shadow-md shadow-amber-500/20"
           >
-            Done
+            {t('common.done')}
           </button>
         </div>
       </div>

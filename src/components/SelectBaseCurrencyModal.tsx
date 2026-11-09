@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Check, Star, X, ArrowRightLeft, Sparkles } from 'lucide-react';
-import { ALL_CURRENCIES, getCurrencyMeta } from '../data/currencies';
+import { ALL_CURRENCIES } from '../data/currencies';
+import { useT } from '../i18n';
 import { CurrencyType, Currency } from '../types/currency';
 import { StorageService } from '../services/storageService';
 
@@ -21,13 +22,14 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
   favoriteCurrencies,
   availableCurrencies = ALL_CURRENCIES
 }) => {
+  const { t, localize, currency } = useT();
   const [search, setSearch] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'favorites' | 'fiat' | 'crypto' | 'commodity'>('all');
 
-  const currentMeta = getCurrencyMeta(currentBaseCurrency);
+  const currentMeta = currency(currentBaseCurrency);
 
   const { favoritesList, alphabeticalList } = useMemo(() => {
-    const list = availableCurrencies && availableCurrencies.length > 0 ? availableCurrencies : ALL_CURRENCIES;
+    const list = (availableCurrencies && availableCurrencies.length > 0 ? availableCurrencies : ALL_CURRENCIES).map(localize);
     const term = search.trim().toLowerCase();
 
     const filtered = list.filter((c) => {
@@ -49,7 +51,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
     const others = sorted.filter(c => !favoriteCurrencies.includes(c.code));
 
     return { favoritesList: favs, alphabeticalList: others };
-  }, [availableCurrencies, search, selectedFilter, favoriteCurrencies]);
+  }, [availableCurrencies, search, selectedFilter, favoriteCurrencies, localize]);
 
   if (!isOpen) return null;
 
@@ -75,8 +77,8 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
               <ArrowRightLeft className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-white">Select Default Currency</h2>
-              <p className="text-xs text-slate-400">All conversions will calculate from this base</p>
+              <h2 className="text-lg font-black text-white">{t('base.title')}</h2>
+              <p className="text-xs text-slate-400">{t('base.subtitle')}</p>
             </div>
           </div>
           <button
@@ -97,7 +99,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
               <span className="text-2xl">{currentMeta.flag}</span>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-slate-400 font-medium">Current Default:</span>
+                  <span className="text-xs text-slate-400 font-medium">{t('base.current')}</span>
                   <span className="font-black text-sm text-white">{currentMeta.code}</span>
                   <span className="text-xs text-[#D4FF00] font-mono font-bold">({currentMeta.symbol})</span>
                 </div>
@@ -105,7 +107,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
               </div>
             </div>
             <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-[#D4FF00]/20 text-[#D4FF00] border border-[#D4FF00]/30">
-              Active
+              {t('base.active')}
             </span>
           </div>
         </div>
@@ -118,7 +120,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search code or country (e.g. USD, EUR, CAD, VND)..."
+              placeholder={t('base.search')}
               className="w-full bg-[#181c28] border border-white/10 rounded-[20px] pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#D4FF00]/50"
               autoFocus
             />
@@ -133,9 +135,9 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
                   StorageService.triggerHaptic();
                   setSelectedFilter(filter);
                 }}
-                className={'px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap capitalize transition-all ' + (selectedFilter === filter ? 'bg-[#D4FF00] text-slate-950 shadow-sm' : 'bg-[#181c28] text-slate-400 hover:text-slate-200 border border-white/5')}
+                className={'px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ' + (selectedFilter === filter ? 'bg-[#D4FF00] text-slate-950 shadow-sm' : 'bg-[#181c28] text-slate-400 hover:text-slate-200 border border-white/5')}
               >
-                {filter === 'all' ? 'All (A-Z)' : filter === 'favorites' ? `⭐ Favorites (${favoriteCurrencies.length})` : filter}
+                {filter === 'favorites' ? t('filter.favorites', { n: favoriteCurrencies.length }) : t(`filter.${filter}`)}
               </button>
             ))}
           </div>
@@ -148,7 +150,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-black uppercase tracking-wider text-[#D4FF00]">
                 <Star className="w-3.5 h-3.5 fill-[#D4FF00]" />
-                <span>Favorites</span>
+                <span>{t('base.favorites')}</span>
               </div>
               <div className="divide-y divide-white/5 border border-[#D4FF00]/25 rounded-[24px] bg-[#181c28]/60 overflow-hidden">
                 {favoritesList.map((curr) => {
@@ -177,7 +179,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
                           </div>
                         ) : (
                           <button className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-300 bg-[#161a24] hover:bg-[#202634] border border-white/10 transition-all">
-                            Select
+                            {t('common.select')}
                           </button>
                         )}
                       </div>
@@ -191,7 +193,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
           {/* Alphabetical Remaining Currencies */}
           <div className="space-y-1.5">
             <div className="px-2 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400">
-              <span>All Currencies (A &rarr; Z)</span>
+              <span>{t('base.allHeader')}</span>
             </div>
             <div className="divide-y divide-white/5 border border-white/5 rounded-[24px] bg-[#181c28]/40 overflow-hidden">
               {alphabeticalList.map((curr) => {
@@ -220,7 +222,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
                         </div>
                       ) : (
                         <button className="px-3 py-1.5 rounded-full text-xs font-bold text-slate-300 bg-[#161a24] hover:bg-[#202634] border border-white/10 transition-all">
-                          Select
+                          {t('common.select')}
                         </button>
                       )}
                     </div>
@@ -234,7 +236,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
         {/* Footer */}
         <div className="p-4 border-t border-white/10 bg-[#0d1017] flex justify-between items-center">
           <p className="text-xs text-slate-400">
-            Tap any currency to set as default base
+            {t('base.footer')}
           </p>
           <button
             onClick={() => {
@@ -243,7 +245,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
             }}
             className="px-5 py-2 rounded-full bg-[#181c28] hover:bg-[#222838] text-slate-300 font-bold text-xs transition-all border border-white/10"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </div>

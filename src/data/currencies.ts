@@ -1,4 +1,5 @@
-import { Currency, RateSource } from "../types/currency";
+import { Currency, RateSource, RateSourceId } from "../types/currency";
+import { en, TKey } from "../i18n/en";
 
 // Comprehensive Global ISO-4217 Currency Database (165+ Currencies, Crypto & Commodities)
 export const GLOBAL_CURRENCY_METADATA: Record<string, Partial<Currency>> = {
@@ -141,57 +142,21 @@ export function resolveCurrency(code: string): Currency {
 // Initial full list of all 160+ known world currencies
 export const ALL_CURRENCIES: Currency[] = Object.keys(GLOBAL_CURRENCY_METADATA).map(resolveCurrency);
 
+// Display text lives in src/i18n; these English values are the defaults.
+const sourceDefaults = (id: RateSourceId) => ({
+  name: en[`source.${id}.name` as TKey],
+  shortName: en[`source.${id}.shortName` as TKey],
+  description: en[`source.${id}.description` as TKey],
+  badge: en[`source.${id}.badge` as TKey],
+  updateFrequency: en[`source.${id}.updateFrequency` as TKey]
+});
+
 export const AVAILABLE_SOURCES: RateSource[] = [
-  {
-    id: "ecb",
-    name: "European Central Bank (ECB)",
-    shortName: "ECB Daily",
-    description: "Official benchmark rates published daily by the European Central Bank. Currencies the ECB does not publish use open-market rates.",
-    badge: "Official Benchmark",
-    updateFrequency: "Daily (16:00 CET)",
-    isOfficial: true,
-    color: "amber"
-  },
-  {
-    id: "nbu",
-    name: "National Bank of Ukraine (NBU)",
-    shortName: "NBU Official",
-    description: "Official reference exchange rates published by the National Bank of Ukraine. Currencies the NBU does not publish use open-market rates.",
-    badge: "Ukrainian Official",
-    updateFrequency: "Daily (09:00 UHT)",
-    isOfficial: true,
-    color: "amber"
-  },
-  {
-    id: "mastercard",
-    name: "Mastercard (Estimate)",
-    shortName: "Mastercard est.",
-    description: "Estimate: open-market mid-rate plus a typical 0.22% card-network spread. Not Mastercard's published rate.",
-    badge: "Estimate",
-    updateFrequency: "Follows market rates",
-    isOfficial: false,
-    color: "amber"
-  },
-  {
-    id: "visa",
-    name: "Visa (Estimate)",
-    shortName: "Visa est.",
-    description: "Estimate: open-market mid-rate plus a typical 0.25% card-network spread. Not Visa's published rate.",
-    badge: "Estimate",
-    updateFrequency: "Follows market rates",
-    isOfficial: false,
-    color: "blue"
-  },
-  {
-    id: "custom_bank",
-    name: "Custom Bank / Issuer Spread",
-    shortName: "Custom Bank",
-    description: "Open-market mid-rate plus your own spread, to match a specific bank card.",
-    badge: "User Defined",
-    updateFrequency: "Manual / Dynamic",
-    isOfficial: false,
-    color: "amber"
-  }
+  { id: "ecb", ...sourceDefaults("ecb"), isOfficial: true, color: "amber" },
+  { id: "nbu", ...sourceDefaults("nbu"), isOfficial: true, color: "amber" },
+  { id: "mastercard", ...sourceDefaults("mastercard"), isOfficial: false, color: "amber" },
+  { id: "visa", ...sourceDefaults("visa"), isOfficial: false, color: "blue" },
+  { id: "custom_bank", ...sourceDefaults("custom_bank"), isOfficial: false, color: "amber" }
 ];
 
 export const DEFAULT_PINNED_CURRENCIES = ["USD", "EUR", "UAH", "CAD", "PLN", "GBP", "VND", "JPY", "AUD", "CHF", "BTC", "XAU"];
@@ -201,13 +166,12 @@ export const CURRENCY_MAP: Record<string, Currency> = ALL_CURRENCIES.reduce((acc
   return acc;
 }, {} as Record<string, Currency>);
 
-export const CARD_FEE_PRESETS = [
-  { id: "free", name: "0% No-Fee Travel Card", percentage: 0, tag: "Best Travel" },
-  { id: "low", name: "1.0% Low Spread Card", percentage: 1.0, tag: "Low Fee" },
-  { id: "avg", name: "2.0% Average Bank Fee", percentage: 2.0, tag: "Bank Average" },
-  { id: "std", name: "3.0% Standard Credit Card", percentage: 3.0, tag: "Typical" },
-  { id: "high", name: "3.5% International Card", percentage: 3.5, tag: "High Markup" }
-];
+export const CARD_FEE_PRESETS = (["free", "low", "avg", "std", "high"] as const).map((id, i) => ({
+  id,
+  name: en[`preset.${id}.name`],
+  percentage: [0, 1.0, 2.0, 3.0, 3.5][i],
+  tag: en[`preset.${id}.tag`]
+}));
 
 export function getCurrencyMeta(code: string): Currency {
   return CURRENCY_MAP[code] || resolveCurrency(code);

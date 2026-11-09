@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeftRight, Percent, TrendingUp, Layers, Terminal } from 'lucide-react';
 import { StorageService } from '../services/storageService';
+import { useT } from '../i18n';
 
 export type AppTabType = 'converter' | 'fee_calculator' | 'trends' | 'sources';
 
@@ -15,26 +16,27 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   onTabChange,
   bankFeePct
 }) => {
+  const { t, pct } = useT();
   const tabs = [
     {
       id: 'converter' as AppTabType,
-      label: 'Converter',
+      label: t('tab.converter'),
       icon: ArrowLeftRight
     },
     {
       id: 'fee_calculator' as AppTabType,
-      label: 'Bank Fee',
+      label: t('tab.fee'),
       icon: Percent,
-      badge: bankFeePct > 0 ? `${bankFeePct}%` : null
+      badge: bankFeePct > 0 ? pct(bankFeePct) : null
     },
     {
       id: 'trends' as AppTabType,
-      label: 'Trends',
+      label: t('tab.trends'),
       icon: TrendingUp
     },
     {
       id: 'sources' as AppTabType,
-      label: 'Sources',
+      label: t('tab.sources'),
       icon: Layers
     }
   ];

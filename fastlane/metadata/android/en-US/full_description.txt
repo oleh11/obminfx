@@ -19,6 +19,7 @@ See the foreign transaction fee your card adds (0% to 3.5%+), the total you'll b
 <li>Convert into many currencies at once, with favorites pinned to the top</li>
 <li>Historical charts from ECB data</li>
 <li>Works offline with your last saved rates</li>
+<li>English and Ukrainian interface</li>
 <li>No ads, no accounts, no tracking</li>
 </ul>
 
