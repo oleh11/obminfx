@@ -1,0 +1,2 @@
+* The Russian ruble is no longer offered
+* Smaller, faster app (download size cut by about two thirds)

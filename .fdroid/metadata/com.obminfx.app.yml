@@ -85,7 +85,26 @@ Builds:
       - npx cap sync android
     output: build/outputs/apk/release/app-release-unsigned.apk
 
+  - versionName: '2.2.2'
+    versionCode: 6
+    commit: v2.2.2
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y npm
+    gradle:
+      - yes
+    prebuild:
+      # Unused Firebase template code from Capacitor (no google-services.json is shipped)
+      - sed -i -e '/google-services/d' ../build.gradle
+      - sed -i -e '/com.google.gms.google-services/d' build.gradle
+      - cd ../..
+      - npm install
+      - npm run build
+      - npx cap sync android
+    output: build/outputs/apk/release/app-release-unsigned.apk
+
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: '2.2.1'
-CurrentVersionCode: 5
+CurrentVersion: '2.2.2'
+CurrentVersionCode: 6
