@@ -1,0 +1,3 @@
+* Search finds every currency by name, in English and Ukrainian
+* "No results" message with a Clear button
+* The currency list stays visible while the keyboard is open
