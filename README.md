@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/oleh11/obminfx/releases/latest"><img src="https://img.shields.io/github/v/release/oleh11/obminfx?style=for-the-badge&color=D4FF00&logo=android&logoColor=black&label=Release" alt="Release" /></a>
-  <a href="https://github.com/oleh11/obminfx/releases"><img src="https://img.shields.io/github/downloads/oleh11/obminfx/total?style=for-the-badge&color=D4FF00&label=Downloads" alt="Downloads" /></a>
+  <a href="https://github.com/oleh11/obminfx/releases/latest"><img src="https://img.shields.io/github/v/release/oleh11/obminfx?style=for-the-badge&color=111111&logo=android&logoColor=black&label=Release" alt="Release" /></a>
+  <a href="https://github.com/oleh11/obminfx/releases"><img src="https://img.shields.io/github/downloads/oleh11/obminfx/total?style=for-the-badge&color=111111&label=Downloads" alt="Downloads" /></a>
   <a href="https://github.com/oleh11/obminfx/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-white?style=for-the-badge" alt="License" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" /></a>
   <a href="https://capacitorjs.com/"><img src="https://img.shields.io/badge/Capacitor-8-119EFF?style=for-the-badge&logo=capacitor&logoColor=white" alt="Capacitor" /></a>
@@ -23,9 +23,19 @@
 ## 📱 App Preview
 
 <p align="center">
-  <img src="assets/screen-converter.png" width="48%" alt="Live Currency Converter & Favorites" />
-  &nbsp;
-  <img src="assets/screen-bank-fee.png" width="48%" alt="Bank Fee & Card Surcharge Simulator" />
+  <img src="assets/screens/1-converter.png" width="24%" alt="Converter with official NBU and ECB rates" />
+  <img src="assets/screens/2-check.png" width="24%" alt="Check my card: the real conversion fee from your bank app amounts" />
+  <img src="assets/screens/3-simulate.png" width="24%" alt="Bank fee simulator" />
+  <img src="assets/screens/4-sources.png" width="24%" alt="Rate sources side by side" />
+</p>
+
+<p align="center"><b>Dark theme</b> (follows your phone, or pick it in Settings)</p>
+
+<p align="center">
+  <img src="assets/screens/1-converter-dark.png" width="24%" alt="Converter, dark theme" />
+  <img src="assets/screens/2-check-dark.png" width="24%" alt="Check my card, dark theme" />
+  <img src="assets/screens/3-simulate-dark.png" width="24%" alt="Bank fee simulator, dark theme" />
+  <img src="assets/screens/4-sources-dark.png" width="24%" alt="Rate sources, dark theme" />
 </p>
 
 ---
@@ -60,17 +70,19 @@
 - **Crypto & Metals:** BTC, ETH, SOL and USDT from CoinGecko; gold, silver, platinum and palladium from gold-api.com.
 - **Zero Commercial Bank Bloat:** Pure, transparent interbank exchange rates with no hidden retail markups.
 
+### 🧾 Check My Card
+- **What did my card really cost?** Enter the purchase amount and the amount your bank took, straight from your bank app. ObminFX compares the rate you got with the official rate that day (NBU for hryvnia, otherwise ECB) and shows the real conversion fee in percent and money.
+- **Honest ranges:** banks often post a payment a few days later, so you also see the range across those days, plus hints for double conversion (EUR → USD → UAH) and mistyped amounts.
+- **One tap to reuse:** save the result as your card's fee and every conversion uses it.
+
 ### 💳 Smart Bank Fee & Surcharge Simulator
 - **Cardholder Fee Modeling:** Real-time simulation of foreign transaction fees (0% to 3.5%+) charged by credit and debit card issuers.
 - **Interbank Settlement Breakdown:** Visual breakdown showing wholesale conversion amount vs. bank processing surcharge.
 
-### 🎨 Diia-Inspired Tactile UI
-- **Obsidian Dark Surfaces:** Elegant matte black and charcoal backgrounds (`#0B0E14`, `#161A24`).
-- **Tactile Squircles:** Deep `rounded-[32px]` card geometry with soft borders and ambient glowing accents.
-- **Electric Neon Accents:** High-legibility Diia-inspired neon lime (`#D4FF00`) and amber gold (`#F59E0B`).
-
-### 🛠️ Data Storage Inspector & Debug Telemetry
-- Dedicated data inspector tab showing live cache state, payload sizes, timestamp metrics, and full JSON export/purge tools.
+### 🎨 Light and Dark Themes
+- **Light:** soft pastel background, white cards and bold black type.
+- **Dark:** the same layout on deep tinted greys. Follows your phone's setting, or choose one in Settings.
+- **English and Ukrainian** interface, following your phone's language.
 
 ---
 

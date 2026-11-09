@@ -260,8 +260,6 @@ export const App: React.FC = () => {
         onSelectBaseCurrency={handleSelectBaseCurrency}
         bankFeePct={bankFeePct}
         onBankFeeChange={handleBankFeeChange}
-        theme="dark"
-        onToggleTheme={() => {}}
         onClose={() => setIsSettingsModalOpen(false)}
         onResetDefaults={handleResetDefaults}
         onOpenSelectBaseModal={() => setIsSelectBaseModalOpen(true)}

@@ -1,7 +1,8 @@
 import React from 'react';
 import { StorageService } from '../services/storageService';
-import { Percent, ShieldAlert, Info, X, ArrowRightLeft, Languages } from 'lucide-react';
+import { Percent, ShieldAlert, Info, X, ArrowRightLeft, Languages, SunMoon } from 'lucide-react';
 import { useT, LANGS, Lang } from '../i18n';
+import { useTheme, THEME_MODES } from '../theme';
 
 const LANGUAGE_NAMES: Record<Lang, string> = { en: 'English', uk: 'Українська' };
 
@@ -11,8 +12,6 @@ interface SettingsModalProps {
   onSelectBaseCurrency: (code: string) => void;
   bankFeePct: number;
   onBankFeeChange: (fee: number) => void;
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
   onClose: () => void;
   onResetDefaults: () => void;
   onOpenSelectBaseModal?: () => void;
@@ -24,13 +23,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSelectBaseCurrency,
   bankFeePct,
   onBankFeeChange,
-  theme,
-  onToggleTheme,
   onClose,
   onResetDefaults,
   onOpenSelectBaseModal
 }) => {
   const { t, pct, currency, lang, setLang } = useT();
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
   if (!isOpen) return null;
 
   const baseMeta = currency(baseCurrency);
@@ -80,6 +78,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className={'py-2 rounded-xl text-xs font-extrabold border transition-all ' + (lang === code ? 'bg-accent text-onaccent border-accent' : 'bg-inset text-ink2 border-line/[0.08] hover:bg-inset2')}
                 >
                   {LANGUAGE_NAMES[code]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Theme */}
+          <div className="p-4 rounded-2xl bg-inset border border-line/[0.08] space-y-2.5">
+            <h3 className="text-sm font-bold text-ink flex items-center gap-1.5">
+              <SunMoon className="w-4 h-4 text-accent" />
+              {t('settings.theme')}
+            </h3>
+            <div className="grid grid-cols-3 gap-1.5">
+              {THEME_MODES.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => {
+                    StorageService.triggerHaptic();
+                    setThemeMode(m);
+                  }}
+                  className={'py-2 rounded-xl text-xs font-extrabold border transition-all whitespace-nowrap ' + (themeMode === m ? 'bg-accent text-onaccent border-accent' : 'bg-inset text-ink2 border-line/[0.08] hover:bg-inset2')}
+                >
+                  {t(`settings.theme.${m}`)}
                 </button>
               ))}
             </div>

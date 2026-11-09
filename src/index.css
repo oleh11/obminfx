@@ -17,9 +17,27 @@
     color-scheme: light;
   }
 
+  /* Dark theme: the same layout on deep tinted greys, white type and white selected states */
+  html.dark {
+    --ink: 245 246 248;
+    --ink2: 208 211 218;
+    --muted: 142 147 158;
+    --card: 27 30 36;
+    --inset: 38 42 50;
+    --inset2: 50 55 64;
+    --line: 255 255 255;
+    --accent: 255 255 255;
+    --onaccent: 0 0 0;
+    color-scheme: dark;
+  }
+
   body {
     background: linear-gradient(165deg, #d6efe6 0%, #dde9f6 48%, #ece4f4 100%) fixed;
     color: rgb(var(--ink));
+  }
+
+  html.dark body {
+    background: linear-gradient(165deg, #0f1714 0%, #0f141d 48%, #16121c 100%) fixed;
   }
 
   html {
@@ -80,3 +98,16 @@
 .safe-area-pb {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
 }
+
+/* Dark theme: status colours are written for the light theme, so lighten them on dark cards */
+html.dark .text-emerald-600, html.dark .text-emerald-700 { color: #34d399; }
+html.dark .text-amber-700 { color: #fbbf24; }
+html.dark .text-rose-600 { color: #fb7185; }
+html.dark .text-red-600 { color: #f87171; }
+html.dark .text-indigo-600 { color: #818cf8; }
+html.dark .text-blue-600 { color: #60a5fa; }
+html.dark .text-purple-600 { color: #c084fc; }
+html.dark .text-cyan-600 { color: #22d3ee; }
+html.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.12); }
+html.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.35); }
+html.dark .selection\:bg-black *::selection, html.dark .selection\:bg-black::selection { background: #fff; color: #000; }
