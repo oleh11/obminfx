@@ -13,10 +13,17 @@ import { RateService } from './services/rateService';
 import { StorageService, DEFAULT_FAVORITES } from './services/storageService';
 import { RateSourceId, ExchangeRateData } from './types/currency';
 import { DEFAULT_PINNED_CURRENCIES } from './data/currencies';
+import { listenForSharedText } from './services/shareTarget';
 
 export const App: React.FC = () => {
   // Navigation & Modal states
   const [activeTab, setActiveTab] = useState<AppTabType>('converter');
+  // A bank notification or SMS shared to the app opens Check my card with it
+  const [sharedText, setSharedText] = useState<{ text: string; nonce: number } | null>(null);
+  useEffect(() => listenForSharedText(text => {
+    setSharedText({ text, nonce: Date.now() });
+    setActiveTab('fee_calculator');
+  }), []);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState<boolean>(false);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState<boolean>(false);
@@ -194,6 +201,7 @@ export const App: React.FC = () => {
             onSelectTargetCurrency={handleSelectTargetCurrency}
             bankFeePct={bankFeePct}
             onBankFeeChange={handleBankFeeChange}
+            sharedText={sharedText}
           />
         )}
 

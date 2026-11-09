@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CalendarDays, CheckCircle2, Info, Loader2, ReceiptText } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardPaste, Info, Loader2, ReceiptText, WalletCards } from 'lucide-react';
+import { parseBankMessage } from '../services/bankMessage';
 import { ALL_CURRENCIES } from '../data/currencies';
 import { useT } from '../i18n';
 import { RateService } from '../services/rateService';
@@ -12,10 +13,20 @@ import {
 
 interface CardCostEstimatorProps {
   defaultPurchaseCurrency: string;
-  defaultCardCurrency: string;
+  /** The user's own currency (Converter base): the default card currency */
+  homeCurrency: string;
   bankFeePct: number;
   onUseAsFee: (pct: number) => void;
+  /** Currencies the user's cards are likely in, most likely first (for reading bank messages) */
+  cardCurrencies: string[];
+  /** Currency codes a bank message may contain */
+  knownCodes: ReadonlySet<string>;
+  onSaveCard: (card: { name: string; currency: string; feePct: number }) => void;
+  /** Text shared to the app; a new nonce fills the form again */
+  prefill?: { text: string; nonce: number } | null;
 }
+
+type PasteStatus = null | { kind: 'filled' } | { kind: 'one'; amount: string } | { kind: 'nothing' };
 
 type Official =
   | { status: 'loading' }
@@ -33,21 +44,66 @@ const localToday = () => {
 // Only fiat currencies have official rates
 const FIAT = [...ALL_CURRENCIES].filter(c => c.type === 'fiat').sort((a, b) => a.code.localeCompare(b.code));
 
+const isFiat = (code: string) => FIAT.some(c => c.code === code);
+
 export const CardCostEstimator: React.FC<CardCostEstimatorProps> = ({
-  defaultPurchaseCurrency, defaultCardCurrency, bankFeePct, onUseAsFee,
+  defaultPurchaseCurrency, homeCurrency, bankFeePct, onUseAsFee, cardCurrencies, knownCodes, onSaveCard, prefill,
 }) => {
   const { t, lang, locale, pct, currency } = useT();
-  const fiatOr = (code: string, fallback: string) => (FIAT.some(c => c.code === code) ? code : fallback);
-  // A hryvnia card is the common case: when either currency is UAH, it's the card's currency
-  const hasUah = defaultPurchaseCurrency === 'UAH' || defaultCardCurrency === 'UAH';
-  const otherCode = defaultPurchaseCurrency === 'UAH' ? defaultCardCurrency : defaultPurchaseCurrency;
-  const [purchaseCur, setPurchaseCur] = useState(() =>
-    hasUah ? fiatOr(otherCode === 'UAH' ? 'EUR' : otherCode, 'EUR') : fiatOr(defaultPurchaseCurrency, 'EUR'));
-  const [cardCur, setCardCur] = useState(() => (hasUah ? 'UAH' : fiatOr(defaultCardCurrency, 'UAH')));
+  // The card is in the user's own currency; the purchase in another one
+  const [cardCur, setCardCur] = useState(() => (isFiat(homeCurrency) ? homeCurrency : 'USD'));
+  const [purchaseCur, setPurchaseCur] = useState(() => {
+    const card = isFiat(homeCurrency) ? homeCurrency : 'USD';
+    if (isFiat(defaultPurchaseCurrency) && defaultPurchaseCurrency !== card) return defaultPurchaseCurrency;
+    return card === 'EUR' ? 'USD' : 'EUR';
+  });
   const [purchaseText, setPurchaseText] = useState('');
   const [chargedText, setChargedText] = useState('');
   const [date, setDate] = useState(localToday);
   const [official, setOfficial] = useState<Official>({ status: 'loading' });
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+  const [pasteStatus, setPasteStatus] = useState<PasteStatus>(null);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [cardName, setCardName] = useState('');
+  const [savedName, setSavedName] = useState<string | null>(null);
+
+  // Amounts go back into the fields the way the user would type them
+  const asInput = (n: number) => (lang === 'uk' ? String(n).replace('.', ',') : String(n));
+
+  const applyMessage = (text: string) => {
+    const msg = parseBankMessage(text, knownCodes, cardCurrencies);
+    if (!msg) {
+      setPasteStatus({ kind: 'nothing' });
+      return;
+    }
+    if (!msg.charged) {
+      // One amount: in the card's currency it's the charge, otherwise the purchase
+      const isCharge = cardCurrencies.includes(msg.purchase.currency);
+      if (isFiat(msg.purchase.currency)) {
+        if (isCharge) { setCardCur(msg.purchase.currency); setChargedText(asInput(msg.purchase.amount)); }
+        else { setPurchaseCur(msg.purchase.currency); setPurchaseText(asInput(msg.purchase.amount)); }
+      }
+      setPasteStatus({ kind: 'one', amount: `${formatCurrencyAmount(msg.purchase.amount, 2, false, '', locale)} ${msg.purchase.currency}` });
+    } else {
+      if (isFiat(msg.purchase.currency)) setPurchaseCur(msg.purchase.currency);
+      if (isFiat(msg.charged.currency)) setCardCur(msg.charged.currency);
+      setPurchaseText(asInput(msg.purchase.amount));
+      setChargedText(asInput(msg.charged.amount));
+      setPasteStatus({ kind: 'filled' });
+    }
+    if (msg.date && msg.date <= localToday()) setDate(msg.date);
+    setSavedName(null);
+  };
+
+  useEffect(() => {
+    if (!prefill) return;
+    setPasteText(prefill.text);
+    setPasteOpen(true);
+    applyMessage(prefill.text);
+    // Only a new share should refill the form
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill?.nonce]);
 
   useEffect(() => {
     if (purchaseCur === cardCur) {
@@ -118,6 +174,35 @@ export const CardCostEstimator: React.FC<CardCostEstimatorProps> = ({
             <p className="text-xs text-muted mt-1 leading-relaxed">{t('est.subtitle')}</p>
           </div>
         </div>
+
+        {/* Paste a bank notification or SMS instead of typing (sharing one to the app fills this too) */}
+        {!pasteOpen ? (
+          <button
+            onClick={() => { StorageService.triggerHaptic(); setPasteOpen(true); }}
+            className="w-full py-2.5 rounded-[16px] bg-inset text-sm font-bold text-ink flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+          >
+            <ClipboardPaste className="w-4 h-4" />{t('est.paste')}
+          </button>
+        ) : (
+          <div className="space-y-1.5">
+            <textarea
+              value={pasteText}
+              onChange={e => { setPasteText(e.target.value); if (e.target.value.trim()) applyMessage(e.target.value); else setPasteStatus(null); }}
+              placeholder={t('est.pastePlaceholder')}
+              rows={3}
+              aria-label={t('est.paste')}
+              className="w-full bg-inset rounded-[16px] px-4 py-3 text-sm text-ink placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/20 resize-none"
+            />
+            {pasteStatus && (
+              <p className={'text-xs ' + (pasteStatus.kind === 'filled' ? 'text-emerald-600' : 'text-amber-700')}>
+                {pasteStatus.kind === 'filled' ? t('est.pasteFilled')
+                  : pasteStatus.kind === 'one' ? t('est.pasteOneAmount', { amount: pasteStatus.amount })
+                  : t('est.pasteNothing')}
+              </p>
+            )}
+            {!pasteStatus && <p className="text-[11px] text-muted">{t('est.shareHint')}</p>}
+          </div>
+        )}
 
         {amountField(t('est.purchase'), purchaseText, setPurchaseText, purchaseCur, setPurchaseCur, 'est-purchase')}
         {amountField(t('est.charged'), chargedText, setChargedText, cardCur, setCardCur, 'est-charged')}
@@ -206,6 +291,48 @@ export const CardCostEstimator: React.FC<CardCostEstimatorProps> = ({
               >
                 {alreadyUsed ? <><CheckCircle2 className="w-4 h-4" />{t('est.used')}</> : t('est.use', { pct: pct(preset, 1) })}
               </button>
+            )}
+
+            {/* Save the measured fee as a named card, to compare cards later */}
+            {Math.abs(estimate.markupPct) <= IMPLAUSIBLE_MARKUP_PCT && (
+              savedName ? (
+                <p className="text-sm font-bold text-emerald-600 flex items-center justify-center gap-2 py-1">
+                  <CheckCircle2 className="w-4 h-4" />{t('est.cardSaved', { name: savedName })}
+                </p>
+              ) : !saveOpen ? (
+                <button
+                  onClick={() => { StorageService.triggerHaptic(); setSaveOpen(true); }}
+                  className="w-full py-3 rounded-[16px] text-sm font-bold bg-inset text-ink flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                >
+                  <WalletCards className="w-4 h-4" />{t('est.saveCard')}
+                </button>
+              ) : (
+                <form
+                  className="flex gap-2"
+                  onSubmit={e => {
+                    e.preventDefault();
+                    const name = cardName.trim();
+                    if (!name) return;
+                    StorageService.triggerHaptic();
+                    onSaveCard({ name, currency: cardCur, feePct: Math.max(0, estimate.markupPct) });
+                    setSavedName(name);
+                    setSaveOpen(false);
+                  }}
+                >
+                  <input
+                    autoFocus
+                    value={cardName}
+                    onChange={e => setCardName(e.target.value)}
+                    maxLength={40}
+                    placeholder={t('est.cardName')}
+                    aria-label={t('est.cardName')}
+                    className="min-w-0 flex-1 bg-inset rounded-[16px] px-4 py-3 text-sm font-bold text-ink placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent/20"
+                  />
+                  <button type="submit" disabled={!cardName.trim()} className="shrink-0 px-5 rounded-[16px] text-sm font-bold bg-accent text-onaccent disabled:opacity-40">
+                    {t('est.save')}
+                  </button>
+                </form>
+              )
             )}
           </>
         )}
