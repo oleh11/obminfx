@@ -18,8 +18,6 @@ interface BankFeeCalculatorTabProps {
   rateData: ExchangeRateData | null;
   baseCurrency: string;
   targetCurrency: string;
-  onSelectBaseCurrency: (code: string) => void;
-  onSelectTargetCurrency: (code: string) => void;
   bankFeePct: number;
   onBankFeeChange: (fee: number) => void;
   /** Text shared to the app (bank message): opens Check my card with it */
@@ -30,8 +28,6 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
   rateData,
   baseCurrency,
   targetCurrency,
-  onSelectBaseCurrency,
-  onSelectTargetCurrency,
   bankFeePct,
   onBankFeeChange,
   sharedText

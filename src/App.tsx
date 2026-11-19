@@ -15,6 +15,7 @@ import { StorageService, DEFAULT_FAVORITES } from './services/storageService';
 import { RateSourceId, ExchangeRateData } from './types/currency';
 import { DEFAULT_PINNED_CURRENCIES } from './data/currencies';
 import { listenForSharedText } from './services/shareTarget';
+import { pairCurrency } from './services/converterOrder';
 
 export const App: React.FC = () => {
   // Navigation & Modal states
@@ -34,7 +35,6 @@ export const App: React.FC = () => {
 
   // App core conversion states
   const [baseCurrency, setBaseCurrency] = useState<string>(() => StorageService.getBaseCurrency() || 'USD');
-  const [targetCurrency, setTargetCurrency] = useState<string>(() => StorageService.getTargetCurrency() || 'UAH');
   // Pair opened from a converter card; doesn't change the saved base currency
   const [trendsPair, setTrendsPair] = useState<{ from: string; to: string } | null>(null);
   const [baseAmount, setBaseAmount] = useState<string>('100.00');
@@ -42,6 +42,9 @@ export const App: React.FC = () => {
   const [activeSourceId, setActiveSourceId] = useState<RateSourceId>(() => StorageService.getActiveSource());
   const [pinnedCurrencies, setPinnedCurrencies] = useState<string[]>(() => StorageService.getPinnedCurrencies());
   const [favoriteCurrencies, setFavoriteCurrencies] = useState<string[]>(() => StorageService.getFavoriteCurrencies());
+
+  // Bank Fee, Trends and Sources open on the Converter's base and its top currency (favorites first)
+  const targetCurrency = pairCurrency(pinnedCurrencies, favoriteCurrencies, baseCurrency);
 
   // Exchange rate data, last updated timestamp & network states
   const [rateData, setRateData] = useState<ExchangeRateData | null>(null);
@@ -101,11 +104,6 @@ export const App: React.FC = () => {
     }
     setPinnedCurrencies(updated);
     StorageService.setPinnedCurrencies(updated);
-  };
-
-  const handleSelectTargetCurrency = (code: string) => {
-    setTargetCurrency(code);
-    StorageService.setTargetCurrency(code);
   };
 
   const handleTabChange = (tab: AppTabType) => {
@@ -200,8 +198,6 @@ export const App: React.FC = () => {
             rateData={rateData}
             baseCurrency={baseCurrency}
             targetCurrency={targetCurrency}
-            onSelectBaseCurrency={setBaseCurrency}
-            onSelectTargetCurrency={handleSelectTargetCurrency}
             bankFeePct={bankFeePct}
             onBankFeeChange={handleBankFeeChange}
             sharedText={sharedText}
@@ -210,8 +206,8 @@ export const App: React.FC = () => {
 
         {activeTab === 'trends' && (
           <HistoricalChartsTab
-            initialFrom={trendsPair?.from || baseCurrency || 'USD'}
-            initialTo={trendsPair?.to || targetCurrency || 'UAH'}
+            initialFrom={trendsPair?.from || baseCurrency}
+            initialTo={trendsPair?.to || targetCurrency}
           />
         )}
 

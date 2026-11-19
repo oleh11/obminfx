@@ -8,6 +8,7 @@ import { useT } from '../i18n';
 import { RateService } from '../services/rateService';
 import { formatCurrencyAmount, calculateBankFeeConversion, formatRate } from '../services/feeCalculator';
 import { StorageService } from '../services/storageService';
+import { orderConverterCurrencies } from '../services/converterOrder';
 
 interface ConverterTabProps {
   baseCurrency: string;
@@ -56,16 +57,10 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
   const numericAmount = parseFloat(baseAmount) || 0;
 
   // Sort pinned currencies: Favorites first, then Alphabetical A-Z
-  const sortedCurrencies = useMemo(() => {
-    const list = pinnedCurrencies.filter(c => c !== baseCurrency);
-    return list.sort((a, b) => {
-      const aFav = favoriteCurrencies.includes(a);
-      const bFav = favoriteCurrencies.includes(b);
-      if (aFav && !bFav) return -1;
-      if (!aFav && bFav) return 1;
-      return a.localeCompare(b);
-    });
-  }, [pinnedCurrencies, baseCurrency, favoriteCurrencies]);
+  const sortedCurrencies = useMemo(
+    () => orderConverterCurrencies(pinnedCurrencies, favoriteCurrencies, baseCurrency),
+    [pinnedCurrencies, baseCurrency, favoriteCurrencies]
+  );
 
   // Copies a plain number (e.g. 1234.56) so it pastes cleanly into other apps
   const handleCopyAmount = (code: string, plainAmount: string) => {

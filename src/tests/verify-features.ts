@@ -2,6 +2,7 @@ import { parseBankMessage } from '../services/bankMessage';
 import { parseNBUHistory, sampleDays } from '../services/rateService';
 import { ALL_CURRENCIES } from '../data/currencies';
 import { upsertCard, removeCard, rankCards } from '../services/cardsService';
+import { orderConverterCurrencies, pairCurrency } from '../services/converterOrder';
 
 let passed = 0;
 let total = 0;
@@ -84,6 +85,13 @@ const usdTrip = rankCards(cards, 100, 'USD', 'EUR', rate);
 assert(usdTrip.every(r => !r.noConversion) && usdTrip[0].card.name === 'Wise', 'Works for any purchase and comparison currency', show(usdTrip.map(r => r.card.name)));
 assert(rankCards(cards, 100, 'JPY', 'UAH', rate).length === 0, 'Cards without a rate for the purchase are left out');
 assert(rankCards(cards, 0, 'EUR', 'UAH', rate).length === 0, 'No amount, no ranking');
+
+// Other tabs follow the Converter: base plus the top of its list (favorites first)
+assert(pairCurrency(['USD', 'EUR', 'PLN', 'UAH'], ['PLN', 'EUR'], 'UAH') === 'EUR', 'Top favorite in the Converter list (A-Z among favorites)');
+assert(pairCurrency(['USD', 'GBP'], [], 'UAH') === 'GBP', 'Without favorites, the first currency A-Z');
+assert(pairCurrency(['UAH', 'EUR'], ['UAH'], 'UAH') === 'EUR', 'The base itself is never the pair');
+assert(pairCurrency([], [], 'USD') === 'EUR' && pairCurrency([], [], 'UAH') === 'USD', 'Empty list falls back to USD or EUR');
+assert(show(orderConverterCurrencies(['JPY', 'CAD', 'EUR'], ['JPY'], 'USD')) === show(['JPY', 'CAD', 'EUR']), 'Converter order: favorites, then A-Z');
 
 console.log(`\n=== Feature Results: ${passed}/${total} Passed ===`);
 if (passed !== total) throw new Error(`Feature tests failed: ${passed}/${total}`);
