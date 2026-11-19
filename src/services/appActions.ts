@@ -11,7 +11,6 @@ const isAndroid = () => Capacitor.getPlatform() === 'android';
 
 export const APP_ID = 'com.obminfx.app';
 export const PLAY_URL = `https://play.google.com/store/apps/details?id=${APP_ID}`;
-export const FEEDBACK_EMAIL = 'REMOVED';
 export const ISSUES_URL = 'https://github.com/oleh11/obminfx/issues';
 
 /** Opens the share sheet. Returns false if sharing isn't available (the text is copied instead when possible). */
@@ -51,8 +50,8 @@ export function openStoreListing(): Promise<void> {
   return openUrl(`market://details?id=${APP_ID}`, PLAY_URL);
 }
 
-/** Opens the email app with a feedback draft; falls back to the GitHub issues page */
+/** Opens a new GitHub issue with the feedback draft filled in; falls back to the issues list */
 export function sendFeedback(subject: string, body: string): Promise<void> {
-  const mailto = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  return openUrl(mailto, ISSUES_URL);
+  const newIssue = `${ISSUES_URL}/new?title=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return openUrl(newIssue, ISSUES_URL);
 }

@@ -9,7 +9,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-/** Opens the Android share sheet and outside links (Play Store, email) for the web app. */
+/** Opens the Android share sheet and outside links (Play Store, GitHub) for the web app. */
 @CapacitorPlugin(name = "AppActions")
 public class AppActionsPlugin extends Plugin {
 
@@ -39,7 +39,7 @@ public class AppActionsPlugin extends Plugin {
     public void openUrl(PluginCall call) {
         String url = call.getString("url");
         String fallback = call.getString("fallback");
-        if (url == null || !(url.startsWith("https:") || url.startsWith("market:") || url.startsWith("mailto:"))) {
+        if (url == null || !(url.startsWith("https:") || url.startsWith("market:"))) {
             call.reject("Unsupported link");
             return;
         }

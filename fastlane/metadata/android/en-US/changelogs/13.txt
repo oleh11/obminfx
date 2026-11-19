@@ -1,0 +1,1 @@
+* Send feedback now opens a GitHub issue instead of email
