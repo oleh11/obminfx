@@ -3,6 +3,7 @@ import { parseNBUHistory, sampleDays } from '../services/rateService';
 import { ALL_CURRENCIES } from '../data/currencies';
 import { upsertCard, removeCard, rankCards } from '../services/cardsService';
 import { orderConverterCurrencies, pairCurrency } from '../services/converterOrder';
+import { parsePriceText, findPrices, detectCurrency, mergePrices } from '../services/priceScan';
 
 let passed = 0;
 let total = 0;
@@ -92,6 +93,31 @@ assert(pairCurrency(['USD', 'GBP'], [], 'UAH') === 'GBP', 'Without favorites, th
 assert(pairCurrency(['UAH', 'EUR'], ['UAH'], 'UAH') === 'EUR', 'The base itself is never the pair');
 assert(pairCurrency([], [], 'USD') === 'EUR' && pairCurrency([], [], 'UAH') === 'USD', 'Empty list falls back to USD or EUR');
 assert(show(orderConverterCurrencies(['JPY', 'CAD', 'EUR'], ['JPY'], 'USD')) === show(['JPY', 'CAD', 'EUR']), 'Converter order: favorites, then A-Z');
+
+// Price scanner: reading price tags
+const priceCases: [string, number | null][] = [
+  ['12.99', 12.99], ['12,99', 12.99], ['1,299.00', 1299], ['1.299,00', 1299], ['1 299', 1299], ['1 299,00', 1299],
+  ["1'299.50", 1299.5], ['12,-', 12], ['12.–', 12], ['1.299', 1299], ['€4.50', 4.5], ['4,5', 4.5],
+  ['12.3.4', null], ['abc', null], ['0', null], ['1,2,3', null], ['12.999.99', null]
+];
+const badPrices = priceCases.filter(([text, want]) => parsePriceText(text) !== want);
+assert(badPrices.length === 0, 'Price formats: dot/comma decimals, thousands groups, 12,- style', show(badPrices.map(([t]) => [t, parsePriceText(t)])));
+const box = (x0: number, w = 30) => ({ x0, y0: 0, x1: x0 + w, y1: 20 });
+const scanned = findPrices([{ words: [
+  { text: '1', confidence: 90, bbox: box(0, 10) }, { text: '299,00', confidence: 90, bbox: box(14) },
+  { text: '7', confidence: 90, bbox: box(200, 10) }, { text: '3,49', confidence: 40, bbox: box(300) }
+] }]);
+assert(scanned.length === 1 && scanned[0].amount === 1299 && scanned[0].bbox.x1 === 44,
+  'Split thousands are joined; lone digits and unsure words are skipped', show(scanned));
+const word = (text: string, x = 0) => ({ text, confidence: 90, bbox: box(x) });
+assert(detectCurrency([{ words: [word('€'), word('12,99', 40)] }, { words: [word('3.49€')] }]) === 'EUR', 'Currency sign next to the prices is detected');
+assert(detectCurrency([{ words: [word('45,00'), word('zł', 40)] }]) === 'PLN', 'Sign after the amount (45,00 zł)');
+assert(detectCurrency([{ words: [word('$'), word('12.99', 40)] }]) === null, 'A shared sign like $ is not guessed');
+assert(detectCurrency([{ words: [word('€12'), word('£9', 80)] }]) === null, 'Mixed currencies in one frame: no guess');
+assert(detectCurrency([{ words: [word('Milk'), word('€')] }]) === null, 'A sign without a number nearby is ignored');
+const merged = mergePrices([{ amount: 12.99, text: '12,99', bbox: { x0: 0, y0: 0, x1: 100, y1: 40 } }],
+  [{ amount: 12.99, text: '12.99', bbox: { x0: 4, y0: 2, x1: 98, y1: 38 } }, { amount: 3.49, text: '3.49', bbox: { x0: 0, y0: 100, x1: 40, y1: 120 } }]);
+assert(merged.length === 2, 'Two reads of the same frame list each price once', show(merged));
 
 console.log(`\n=== Feature Results: ${passed}/${total} Passed ===`);
 if (passed !== total) throw new Error(`Feature tests failed: ${passed}/${total}`);

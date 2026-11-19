@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+# Copied from node_modules by tools/copy-ocr.cjs
+public/ocr/
 
 # Build outputs
 dist/

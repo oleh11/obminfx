@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Navbar } from './components/Navbar';
 import { ConverterTab } from './components/ConverterTab';
 import { BankFeeCalculatorTab } from './components/BankFeeCalculatorTab';
@@ -10,12 +10,13 @@ import { SelectBaseCurrencyModal } from './components/SelectBaseCurrencyModal';
 import { SourceSelectorModal } from './components/SourceSelectorModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AppTour } from './components/AppTour';
+import { PriceScanner } from './components/PriceScanner';
 import { RateService } from './services/rateService';
 import { StorageService, DEFAULT_FAVORITES } from './services/storageService';
 import { RateSourceId, ExchangeRateData } from './types/currency';
 import { DEFAULT_PINNED_CURRENCIES } from './data/currencies';
 import { listenForSharedText } from './services/shareTarget';
-import { pairCurrency } from './services/converterOrder';
+import { pairCurrency, orderConverterCurrencies } from './services/converterOrder';
 
 export const App: React.FC = () => {
   // Navigation & Modal states
@@ -31,6 +32,7 @@ export const App: React.FC = () => {
   const [isSourceModalOpen, setIsSourceModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   // First launch walkthrough; can be shown again from Settings
+  const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [isTourOpen, setIsTourOpen] = useState<boolean>(() => !StorageService.getTourSeen());
 
   // App core conversion states
@@ -48,6 +50,15 @@ export const App: React.FC = () => {
 
   // Exchange rate data, last updated timestamp & network states
   const [rateData, setRateData] = useState<ExchangeRateData | null>(null);
+  // Price tag currencies for the scanner: the Converter list first, then every other currency with a rate
+  const scannerCurrencies = useMemo(() => {
+    const top = orderConverterCurrencies(pinnedCurrencies, favoriteCurrencies, baseCurrency);
+    const rest = RateService.getAvailableCurrenciesFromRates(rateData)
+      .map(c => c.code)
+      .filter(c => c !== baseCurrency && !top.includes(c))
+      .sort();
+    return [...top, ...rest];
+  }, [pinnedCurrencies, favoriteCurrencies, baseCurrency, rateData]);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -170,6 +181,7 @@ export const App: React.FC = () => {
       <main className="flex-1 px-4 py-4 overflow-y-auto w-full max-w-2xl mx-auto w-full pb-24">
         {activeTab === 'converter' && (
           <ConverterTab
+            onOpenScanner={() => setIsScannerOpen(true)}
             baseCurrency={baseCurrency}
             onSelectBaseCurrency={handleSelectBaseCurrency}
             baseAmount={baseAmount}
@@ -271,6 +283,16 @@ export const App: React.FC = () => {
         onResetDefaults={handleResetDefaults}
         onOpenSelectBaseModal={() => setIsSelectBaseModalOpen(true)}
         onOpenTour={() => setIsTourOpen(true)}
+      />
+
+      <PriceScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        rateData={rateData}
+        homeCurrency={baseCurrency}
+        defaultPriceCurrency={targetCurrency}
+        currencyCodes={scannerCurrencies}
+        bankFeePct={bankFeePct}
       />
 
       <AppTour

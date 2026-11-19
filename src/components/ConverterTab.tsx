@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   ArrowRightLeft, Plus, Trash2, Check, Copy, 
-  TrendingUp, Percent, Star, Sparkles, ChevronRight, ChevronDown, Clock, ShieldCheck 
+  TrendingUp, Percent, Star, Sparkles, ChevronRight, ChevronDown, Clock, ShieldCheck, ScanLine
 } from 'lucide-react';
 import { ExchangeRateData } from '../types/currency';
 import { useT } from '../i18n';
@@ -11,6 +11,8 @@ import { StorageService } from '../services/storageService';
 import { orderConverterCurrencies } from '../services/converterOrder';
 
 interface ConverterTabProps {
+  /** Opens the camera price scanner */
+  onOpenScanner?: () => void;
   baseCurrency: string;
   onSelectBaseCurrency: (code: string) => void;
   baseAmount: string;
@@ -31,6 +33,7 @@ interface ConverterTabProps {
 }
 
 export const ConverterTab: React.FC<ConverterTabProps> = ({
+  onOpenScanner,
   baseCurrency,
   onSelectBaseCurrency,
   baseAmount,
@@ -202,6 +205,20 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
           </span>
         </div>
 
+        <div className="flex items-center gap-1.5 shrink-0">
+        {onOpenScanner && (
+          <button
+            onClick={() => {
+              StorageService.triggerHaptic();
+              onOpenScanner();
+            }}
+            aria-label={t('conv.scan')}
+            className="flex items-center gap-1.5 px-3 py-1.5 shrink-0 whitespace-nowrap rounded-full bg-card border border-line/[0.12] hover:bg-inset2 active:scale-95 text-ink text-xs font-black transition-all"
+          >
+            <ScanLine className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>{t('conv.scan')}</span>
+          </button>
+        )}
         <button
           onClick={() => {
             StorageService.triggerHaptic();
@@ -212,6 +229,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
           <Plus className="w-3.5 h-3.5 stroke-[3]" />
           <span>{t('conv.addCurrency')}</span>
         </button>
+        </div>
       </div>
 
       {/* Converted Currencies Diia Cards */}

@@ -28,6 +28,9 @@ Your bank shows one exchange rate, then bills you another plus a foreign transac
 <li>Save your cards and see which one is cheapest for each purchase</li>
 </ul>
 
+<b>Scan price tags</b>
+Point your camera at price tags in a shop abroad: each price gets a label with its value in your currency, card fee included if you like. It recognizes € £ zł ₴ and other signs on the tag. The text is read on your phone; images are never saved or sent.
+
 <b>Fast, simple converter</b>
 <ul>
 <li>Type an amount once and see it in all your currencies</li>

@@ -259,7 +259,7 @@ export const en = {
   'tour.start': "Start using ObminFX",
   'tour.step': "{n} of {total}",
   'tour.converter.title': "Convert into all your currencies",
-  'tour.converter.body': "Type an amount once and see it in every currency on your list. Tap + to add currencies, ☆ to pin favorites to the top, and the flag to make one your base.",
+  'tour.converter.body': "Type an amount once and see it in every currency on your list. Tap + to add currencies, ☆ to pin favorites to the top, and the flag to make one your base. Abroad, tap Scan prices and point the camera at price tags.",
   'tour.fee.title': "See what your card really charges",
   'tour.fee.body': "Simulate a purchase with your bank’s foreign transaction fee, or use “Check my card” with the amounts from your bank app to find the real markup. You can also share a bank SMS or notification to ObminFX.",
   'tour.trends.title': "Watch the trend",
@@ -279,7 +279,23 @@ export const en = {
   'settings.feedbackSubject': "ObminFX feedback",
   'settings.feedbackBody': "What would you like to tell us? (bugs, ideas, missing currencies)\n\n\n—\nObminFX {version}",
   'settings.privacy': "Your privacy",
-  'settings.privacyBody': "No account, no ads, no analytics. Your currencies, cards and settings stay on this phone. The app only goes online to download exchange rates."
+  'settings.privacyBody': "No account, no ads, no analytics. Your currencies, cards and settings stay on this phone. The app only goes online to download exchange rates.",
+  'conv.scan': "Scan prices",
+  'scan.title': "Price scanner",
+  'scan.starting': "Starting the camera…",
+  'scan.loading': "Getting the text reader ready…",
+  'scan.pointAt': "Point the camera at a price tag",
+  'scan.found': "Prices found: {n}",
+  'scan.paused': "Paused. Tap Resume to keep scanning",
+  'scan.error': "Couldn’t read the camera image. Close the scanner and try again.",
+  'scan.denied': "ObminFX can’t use the camera",
+  'scan.deniedHint': "Allow camera access for ObminFX in your phone’s settings. Images are read on your phone and never saved or sent.",
+  'scan.pricesIn': "Prices in",
+  'scan.noRate': "No rate for {from} → {to} from this source. Pick another currency or source.",
+  'scan.withFee': "With card fee {fee}",
+  'scan.hold': "Hold",
+  'scan.resume': "Resume",
+  'scan.detected': "{code} read from the tags"
 } as const;
 
 export type TKey = keyof typeof en;

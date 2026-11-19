@@ -2,10 +2,12 @@
   "name": "obminfx",
   "description": "Multi-source currency converter with bank fee calculator",
   "private": true,
-  "version": "2.5.0",
+  "version": "2.6.0",
   "type": "module",
   "scripts": {
+    "predev": "node tools/copy-ocr.cjs",
     "dev": "vite",
+    "prebuild": "node tools/copy-ocr.cjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "tsx src/tests/verify-calculations.ts && tsx src/tests/verify-i18n.ts && tsx src/tests/verify-currencies.ts && tsx src/tests/verify-card-cost.ts && tsx src/tests/verify-theme.ts && tsx src/tests/verify-features.ts"
@@ -24,9 +26,11 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.15.0",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "tesseract.js": "5.1.1"
   },
   "devDependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
