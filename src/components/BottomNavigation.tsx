@@ -42,7 +42,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-xl border-t border-line/[0.08] safe-area-pb">
+    <nav data-bottom-nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/90 backdrop-blur-xl border-t border-line/[0.08] safe-area-pb">
       <div className="w-full max-w-2xl mx-auto px-4 py-2 flex items-center justify-between">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -50,6 +50,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
           return (
             <button
               key={tab.id}
+              data-tab={tab.id}
               onClick={() => {
                 StorageService.triggerHaptic();
                 onTabChange(tab.id);

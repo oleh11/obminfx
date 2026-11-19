@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StorageService } from '../services/storageService';
-import { Percent, ShieldAlert, Info, X, ArrowRightLeft, Languages, SunMoon } from 'lucide-react';
+import { Percent, ShieldAlert, Info, X, ArrowRightLeft, Languages, SunMoon, Share2, Star, MessageSquare, ShieldCheck, Compass, Heart } from 'lucide-react';
+import { shareText, openStoreListing, sendFeedback, PLAY_URL } from '../services/appActions';
+import pkg from '../../package.json';
 import { useT, LANGS, Lang } from '../i18n';
 import { useTheme, THEME_MODES } from '../theme';
 
@@ -15,6 +17,7 @@ interface SettingsModalProps {
   onClose: () => void;
   onResetDefaults: () => void;
   onOpenSelectBaseModal?: () => void;
+  onOpenTour?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -25,11 +28,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onBankFeeChange,
   onClose,
   onResetDefaults,
-  onOpenSelectBaseModal
+  onOpenSelectBaseModal,
+  onOpenTour
 }) => {
   const { t, pct, currency, lang, setLang } = useT();
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
+  const [copied, setCopied] = useState(false);
   if (!isOpen) return null;
+
+  const supportActions = [
+    {
+      icon: Share2,
+      label: copied ? t('settings.shareCopied') : t('settings.share'),
+      run: async () => {
+        // Without a share sheet (web) the message is copied instead
+        const shared = await shareText(t('settings.shareMessage', { url: PLAY_URL }), 'ObminFX');
+        if (!shared) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }
+      }
+    },
+    { icon: Star, label: t('settings.rate'), run: () => openStoreListing() },
+    {
+      icon: MessageSquare,
+      label: t('settings.feedback'),
+      run: () => sendFeedback(t('settings.feedbackSubject'), t('settings.feedbackBody', { version: pkg.version }))
+    },
+    {
+      icon: Compass,
+      label: t('settings.tour'),
+      run: () => {
+        onClose();
+        onOpenTour?.();
+      }
+    }
+  ];
 
   const baseMeta = currency(baseCurrency);
 
@@ -170,6 +204,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Support: share, rate, feedback, tour */}
+          <div className="p-4 rounded-2xl bg-inset border border-line/[0.08] space-y-2.5">
+            <h3 className="text-sm font-bold text-ink flex items-center gap-1.5">
+              <Heart className="w-4 h-4 text-accent" />
+              {t('settings.support')}
+            </h3>
+            <p className="text-xs text-muted leading-relaxed">{t('settings.supportBody')}</p>
+            <div className="grid grid-cols-1 gap-1.5">
+              {supportActions.map(({ icon: Icon, label, run }) => (
+                <button
+                  key={label}
+                  onClick={() => {
+                    StorageService.triggerHaptic();
+                    run();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-inset border border-line/[0.08] hover:bg-inset2 text-xs font-bold text-ink2 transition-colors"
+                >
+                  <Icon className="w-4 h-4 text-accent" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Privacy */}
+          <div className="p-4 rounded-2xl bg-inset border border-line/[0.08]">
+            <h3 className="text-sm font-bold text-ink mb-1.5 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              {t('settings.privacy')}
+            </h3>
+            <p className="text-xs text-ink2 leading-relaxed">{t('settings.privacyBody')}</p>
           </div>
 
           {/* Reset Defaults */}

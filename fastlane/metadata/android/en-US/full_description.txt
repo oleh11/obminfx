@@ -1,26 +1,44 @@
-<b>ObminFX</b> ("obmin" means "exchange" in Ukrainian) is a free, open-source currency converter that also shows what your bank or card really charges you.
+<b>ObminFX</b> is a free, open-source currency converter and exchange rate app that also shows what your bank card really charges you abroad. "Obmin" means "exchange" in Ukrainian.
 
-<b>Rates from sources you can name</b>
+Your bank shows one exchange rate, then bills you another plus a foreign transaction fee. ObminFX puts the official rate, the market rate and your card's real cost side by side, so you know the price before you pay.
+
+<b>Who it's for</b>
+<ul>
+<li>Travelers paying by card in another currency</li>
+<li>Online shoppers buying from foreign stores</li>
+<li>Digital nomads, freelancers and expats paid in one currency and spending in another</li>
+<li>Anyone in Ukraine who wants the official NBU exchange rate (курс НБУ) at a glance</li>
+</ul>
+
+<b>Live exchange rates from sources you can name</b>
 <ul>
 <li>European Central Bank (ECB) daily reference rates</li>
-<li>National Bank of Ukraine (NBU) official rates</li>
-<li>Open-market mid-rates for 160+ currencies</li>
-<li>Crypto: BTC, ETH, SOL, USDT</li>
-<li>Precious metals: gold, silver, platinum, palladium</li>
-<li>Mastercard and Visa estimates (mid-rate plus a typical network spread)</li>
-<li>Your own bank's spread, set by you</li>
+<li>National Bank of Ukraine (NBU) official hryvnia rates</li>
+<li>Open-market mid-rates for 160+ world currencies: USD, EUR, GBP, PLN, UAH, CAD, JPY, CHF and more</li>
+<li>Crypto prices: Bitcoin (BTC), Ethereum (ETH), Solana (SOL), Tether (USDT)</li>
+<li>Gold, silver, platinum and palladium prices</li>
+<li>Mastercard and Visa rate estimates (mid-rate plus a typical network spread)</li>
 </ul>
 
-<b>Bank fee calculator</b>
-See the foreign transaction fee your card adds (0% to 3.5%+), the total you'll be billed, and how it compares with a no-fee travel card.
-
-<b>Also</b>
+<b>Card fee calculator</b>
 <ul>
-<li>Convert into many currencies at once, with favorites pinned to the top</li>
-<li>Historical charts from ECB data</li>
-<li>Works offline with your last saved rates</li>
-<li>English and Ukrainian interface</li>
-<li>No ads, no accounts, no tracking</li>
+<li>Simulate a purchase with your card's foreign transaction fee (0% to 3.5%+) and see the total you'll be billed</li>
+<li>Check my card: enter the amounts from your bank app to find the real markup you paid compared with the NBU or ECB rate</li>
+<li>Share a bank SMS or notification to ObminFX and it fills in the numbers for you</li>
+<li>Save your cards and see which one is cheapest for each purchase</li>
 </ul>
 
-Rates come from public APIs (Frankfurter/ECB, bank.gov.ua, open.er-api.com, CoinGecko, gold-api.com).
+<b>Fast, simple converter</b>
+<ul>
+<li>Type an amount once and see it in all your currencies</li>
+<li>Pin favorite currencies to the top; switch the base currency with one tap</li>
+<li>Exchange rate history charts (ECB and NBU)</li>
+<li>Works offline with your last saved rates</li>
+<li>Light and dark theme; English and Ukrainian</li>
+<li>Short tour on first launch, which you can skip</li>
+</ul>
+
+<b>Private by design</b>
+No ads, no account, no analytics or tracking. Your currencies, cards and settings stay on your phone. The app only goes online to download exchange rates, from public sources: Frankfurter/ECB, bank.gov.ua, open.er-api.com, CoinGecko and gold-api.com.
+
+ObminFX is MIT-licensed. Source code and issue tracker: https://github.com/oleh11/obminfx

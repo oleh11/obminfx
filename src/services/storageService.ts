@@ -9,7 +9,8 @@ const KEYS = {
   BANK_FEE_PCT: 'app_bank_fee_pct_v1',
   ACTIVE_SOURCE: 'app_active_source_v1',
   HAPTIC_ENABLED: 'app_haptic_enabled_v1',
-  CUSTOM_SPREAD: 'custom_bank_spread_pct'
+  CUSTOM_SPREAD: 'custom_bank_spread_pct',
+  TOUR_SEEN: 'app_tour_seen_v1'
 };
 
 export const DEFAULT_FAVORITES = ['USD', 'EUR', 'UAH', 'CAD', 'GBP', 'VND', 'PLN', 'JPY'];
@@ -98,6 +99,23 @@ export class StorageService {
 
   static setHapticEnabled(enabled: boolean): void {
     localStorage.setItem(KEYS.HAPTIC_ENABLED, enabled.toString());
+  }
+
+  /** True once the first-launch tour was finished or skipped */
+  static getTourSeen(): boolean {
+    try {
+      return localStorage.getItem(KEYS.TOUR_SEEN) === '1';
+    } catch {
+      return true;
+    }
+  }
+
+  static setTourSeen(): void {
+    try {
+      localStorage.setItem(KEYS.TOUR_SEEN, '1');
+    } catch {
+      // Storage unavailable: the tour may show again next launch
+    }
   }
 
   static triggerHaptic(): void {

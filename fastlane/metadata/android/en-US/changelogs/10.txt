@@ -1,0 +1,3 @@
+* Short app tour on first launch (skip any time, replay from Settings)
+* Share the app, rate it on Google Play or send feedback from Settings
+* Privacy note in Settings: no account, no ads, no tracking

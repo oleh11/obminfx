@@ -9,6 +9,7 @@ import { AddCurrencyModal } from './components/AddCurrencyModal';
 import { SelectBaseCurrencyModal } from './components/SelectBaseCurrencyModal';
 import { SourceSelectorModal } from './components/SourceSelectorModal';
 import { SettingsModal } from './components/SettingsModal';
+import { AppTour } from './components/AppTour';
 import { RateService } from './services/rateService';
 import { StorageService, DEFAULT_FAVORITES } from './services/storageService';
 import { RateSourceId, ExchangeRateData } from './types/currency';
@@ -28,6 +29,8 @@ export const App: React.FC = () => {
   const [isSelectBaseModalOpen, setIsSelectBaseModalOpen] = useState<boolean>(false);
   const [isSourceModalOpen, setIsSourceModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  // First launch walkthrough; can be shown again from Settings
+  const [isTourOpen, setIsTourOpen] = useState<boolean>(() => !StorageService.getTourSeen());
 
   // App core conversion states
   const [baseCurrency, setBaseCurrency] = useState<string>(() => StorageService.getBaseCurrency() || 'USD');
@@ -271,6 +274,16 @@ export const App: React.FC = () => {
         onClose={() => setIsSettingsModalOpen(false)}
         onResetDefaults={handleResetDefaults}
         onOpenSelectBaseModal={() => setIsSelectBaseModalOpen(true)}
+        onOpenTour={() => setIsTourOpen(true)}
+      />
+
+      <AppTour
+        isOpen={isTourOpen}
+        onShowTab={setActiveTab}
+        onClose={() => {
+          StorageService.setTourSeen();
+          setIsTourOpen(false);
+        }}
       />
     </div>
   );

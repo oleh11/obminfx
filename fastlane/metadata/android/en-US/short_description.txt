@@ -1,1 +1,1 @@
-Currency converter with live central bank rates and a card fee calculator
+Currency converter with ECB & NBU rates that shows your card's real foreign fee

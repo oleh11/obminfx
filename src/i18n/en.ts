@@ -253,7 +253,33 @@ export const en = {
 
   // Currency search
   'search.noMatch': 'No currencies match “{term}”',
-  'search.clear': 'Clear search'
+  'search.clear': 'Clear search',
+  'tour.skip': "Skip",
+  'tour.next': "Next",
+  'tour.start': "Start using ObminFX",
+  'tour.step': "{n} of {total}",
+  'tour.converter.title': "Convert into all your currencies",
+  'tour.converter.body': "Type an amount once and see it in every currency on your list. Tap + to add currencies, ☆ to pin favorites to the top, and the flag to make one your base.",
+  'tour.fee.title': "See what your card really charges",
+  'tour.fee.body': "Simulate a purchase with your bank’s foreign transaction fee, or use “Check my card” with the amounts from your bank app to find the real markup. You can also share a bank SMS or notification to ObminFX.",
+  'tour.trends.title': "Watch the trend",
+  'tour.trends.body': "Charts of past rates for the pair you care about, from the European Central Bank and the National Bank of Ukraine.",
+  'tour.sources.title': "Pick your rate source",
+  'tour.sources.body': "Official ECB and NBU rates, open-market rates, crypto, gold, and Mastercard and Visa estimates. Switch any time.",
+  'tour.privacy.title': "Private, and works offline",
+  'tour.privacy.body': "No account, no ads, no tracking. The app only downloads exchange rates, and keeps the last ones so it works without internet.",
+  'settings.tour': "Show the app tour",
+  'settings.support': "Support ObminFX",
+  'settings.supportBody': "ObminFX is free and made by one developer. A rating, a share or a note about what to improve helps more than you’d think.",
+  'settings.share': "Share app",
+  'settings.rate': "Rate on Google Play",
+  'settings.feedback': "Send feedback",
+  'settings.shareMessage': "ObminFX: a free currency converter with official ECB and National Bank of Ukraine rates that also shows what your card really charges abroad. No ads, no tracking. {url}",
+  'settings.shareCopied': "Link copied",
+  'settings.feedbackSubject': "ObminFX feedback",
+  'settings.feedbackBody': "What would you like to tell us? (bugs, ideas, missing currencies)\n\n\n—\nObminFX {version}",
+  'settings.privacy': "Your privacy",
+  'settings.privacyBody': "No account, no ads, no analytics. Your currencies, cards and settings stay on this phone. The app only goes online to download exchange rates."
 } as const;
 
 export type TKey = keyof typeof en;
