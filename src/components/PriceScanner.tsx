@@ -27,6 +27,19 @@ type Status = 'starting' | 'loading' | 'scanning' | 'paused' | 'denied' | 'error
 /** Longest side of the frame given to the text reader: big enough for shelf tags, small enough to stay quick */
 const READ_SIZE = 1280;
 const PAUSE_BETWEEN_READS_MS = 250;
+/** 1×1 transparent GIF, so the video never shows the WebView's default play-button poster */
+const BLANK_POSTER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+/** Four corner brackets of a viewfinder, filling the parent */
+const Corners: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div className={'absolute inset-0 ' + className}>
+    {['top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-2xl', 'top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-2xl',
+      'bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-2xl', 'bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-2xl'].map(pos => (
+      <span key={pos} className={'absolute w-8 h-8 border-white drop-shadow-[0_0_3px_rgba(0,0,0,0.6)] ' + pos} />
+    ))}
+  </div>
+);
+
 /** Size of the extra copy used for big prices */
 const SMALL_FACTOR = 1 / 3;
 
@@ -52,6 +65,8 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
   const [withFee, setWithFee] = useState(bankFeePct > 0);
   const [stage, setStage] = useState({ w: 0, h: 0 });
   const pausedRef = useRef(false);
+  /** True once camera frames are showing */
+  const [live, setLive] = useState(false);
   /** Currency read from the tags, shown as a hint */
   const [detected, setDetected] = useState<string | null>(null);
   /** True once the user chose the tag currency themselves; detection then stops */
@@ -75,6 +90,7 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
     const canvas = document.createElement('canvas');
     let smallCanvas: HTMLCanvasElement | null = null;
     pausedRef.current = false;
+    setLive(false);
     setPrices([]);
     setStatus('starting');
 
@@ -233,7 +249,34 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
     <div className="fixed inset-0 z-[70] bg-black flex flex-col animate-fade-in" role="dialog" aria-modal="true" aria-label={t('scan.title')}>
       {/* Camera preview with labels */}
       <div ref={stageRef} className="absolute inset-0 overflow-hidden">
-        <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover" playsInline muted />
+        {/* Transparent poster and hidden until frames arrive: Android otherwise shows a gray play button */}
+        <video
+          ref={videoRef}
+          className={'absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ' + (live ? 'opacity-100' : 'opacity-0')}
+          poster={BLANK_POSTER}
+          playsInline
+          muted
+          disablePictureInPicture
+          controls={false}
+          onPlaying={() => setLive(true)}
+        />
+        {!live && status !== 'denied' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white pointer-events-none">
+            <div className="relative w-56 h-36">
+              <Corners className="opacity-60 animate-pulse" />
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold opacity-80">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {t('scan.starting')}
+            </div>
+          </div>
+        )}
+        {live && prices.length === 0 && status !== 'paused' && (
+          // Viewfinder hint while nothing is found yet
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-40 pointer-events-none">
+            <Corners className="opacity-70" />
+          </div>
+        )}
         {cover > 0 && isFinite(rate) && prices.map((p, i) => {
           const boxLeft = offsetX + p.bbox.x0 * cover;
           const boxTop = offsetY + p.bbox.y0 * cover;
@@ -308,7 +351,7 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
 
       {/* Bottom panel: status, found prices, controls */}
       <div className="relative safe-area-pb px-4 pt-6 bg-gradient-to-t from-black/85 via-black/60 to-transparent text-white space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold opacity-90">
+        <div className={'flex items-center gap-2 text-xs font-bold opacity-90' + (live || status === 'denied' ? '' : ' invisible')}>
           {status === 'starting' || status === 'loading'
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : <ScanLine className="w-4 h-4" />}

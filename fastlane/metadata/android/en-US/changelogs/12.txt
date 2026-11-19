@@ -1,0 +1,3 @@
+* New: Scan prices. Point your camera at price tags and see each price in your currency, right on the tag. Works offline; images never leave your phone
+* Cleaner scanner start: a viewfinder while the camera starts, instead of a gray play icon
+* Bank Fee, Trends and Sources now open on your Converter currency and your top favorite
