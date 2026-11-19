@@ -128,7 +128,7 @@ npx cap open android
 ### 📦 Building Android Release (.aab & .apk)
 ```powershell
 cd android
-$env:JAVA_HOME="C:\Users\USER\.jdks\jbr-21.0.11"
+$env:JAVA_HOME="<path to your JDK 21>"
 .\gradlew.bat bundleRelease assembleRelease
 ```
 
