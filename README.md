@@ -5,6 +5,7 @@
 </p>
 
 <p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.obminfx.app"><img src="https://img.shields.io/badge/Google_Play-Get_it-111111?style=for-the-badge&logo=googleplay&logoColor=white" alt="Get it on Google Play" /></a>
   <a href="https://github.com/oleh11/obminfx/releases/latest"><img src="https://img.shields.io/github/v/release/oleh11/obminfx?style=for-the-badge&color=111111&logo=android&logoColor=black&label=Release" alt="Release" /></a>
   <a href="https://github.com/oleh11/obminfx/releases"><img src="https://img.shields.io/github/downloads/oleh11/obminfx/total?style=for-the-badge&color=111111&label=Downloads" alt="Downloads" /></a>
   <a href="https://github.com/oleh11/obminfx/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-white?style=for-the-badge" alt="License" /></a>
@@ -44,9 +45,9 @@
 
 | Where | How |
 | :--- | :--- |
+| **Google Play** (recommended) | [**Get it on Google Play**](https://play.google.com/store/apps/details?id=com.obminfx.app) |
 | **Direct APK** | [**Download the latest ObminFX.apk**](https://github.com/oleh11/obminfx/releases/latest/download/ObminFX.apk) |
 | **Obtainium** (auto-updates from GitHub) | [**Add to Obtainium**](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/oleh11/obminfx) |
-| **Google Play** | Launching soon. **Help us get there:** join the [tester group](https://groups.google.com/g/obminfx-testers), then [opt in to the beta](https://play.google.com/apps/testing/com.obminfx.app). |
 | **F-Droid** | [Requested](https://gitlab.com/fdroid/rfp/-/work_items/4749), coming soon |
 
 > **Sideloading:** if you install the APK directly, allow *"Install from this source"* when Android asks.
