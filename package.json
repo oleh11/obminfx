@@ -3,6 +3,7 @@
   "description": "Multi-source currency converter with bank fee calculator",
   "private": true,
   "version": "2.8.0",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "predev": "node tools/copy-ocr.cjs",

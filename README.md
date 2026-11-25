@@ -8,7 +8,7 @@
   <a href="https://play.google.com/store/apps/details?id=com.obminfx.app"><img src="https://img.shields.io/badge/Google_Play-Get_it-111111?style=for-the-badge&logo=googleplay&logoColor=white" alt="Get it on Google Play" /></a>
   <a href="https://github.com/oleh11/obminfx/releases/latest"><img src="https://img.shields.io/github/v/release/oleh11/obminfx?style=for-the-badge&color=111111&logo=android&logoColor=black&label=Release" alt="Release" /></a>
   <a href="https://github.com/oleh11/obminfx/releases"><img src="https://img.shields.io/github/downloads/oleh11/obminfx/total?style=for-the-badge&color=111111&label=Downloads" alt="Downloads" /></a>
-  <a href="https://github.com/oleh11/obminfx/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-white?style=for-the-badge" alt="License" /></a>
+  <a href="https://github.com/oleh11/obminfx/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-white?style=for-the-badge" alt="License" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" /></a>
   <a href="https://capacitorjs.com/"><img src="https://img.shields.io/badge/Capacitor-8-119EFF?style=for-the-badge&logo=capacitor&logoColor=white" alt="Capacitor" /></a>
   <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" /></a>
@@ -137,4 +137,8 @@ $env:JAVA_HOME="<path to your JDK 21>"
 
 ## 📄 License
 
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
+Copyright © 2026 Oleh Antonyuk.
+
+ObminFX is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License** as published by the Free Software Foundation, either **version 3** of the License, or (at your option) any later version. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See [`LICENSE`](LICENSE) for the full text.
+
+Releases up to and including 2.8 were published under the MIT License; copies obtained under those terms keep them.

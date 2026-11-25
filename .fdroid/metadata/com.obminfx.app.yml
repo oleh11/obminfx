@@ -3,7 +3,7 @@ AntiFeatures:
     en-US: Fetches rates from open.er-api.com, CoinGecko and gold-api.com.
 Categories:
   - Money
-License: MIT
+License: GPL-3.0-or-later
 AuthorName: Oleh Antonyuk
 SourceCode: https://github.com/oleh11/obminfx
 IssueTracker: https://github.com/oleh11/obminfx/issues

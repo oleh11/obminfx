@@ -44,4 +44,4 @@ Point your camera at price tags in a shop abroad: each price gets a label with i
 <b>Private by design</b>
 No ads, no account, no analytics or tracking. Your currencies, cards and settings stay on your phone. The app only goes online to download exchange rates, from public sources: Frankfurter/ECB, bank.gov.ua, open.er-api.com, CoinGecko and gold-api.com.
 
-ObminFX is MIT-licensed. Source code and issue tracker: https://github.com/oleh11/obminfx
+ObminFX is free software under the GPL-3.0 license. Source code and issue tracker: https://github.com/oleh11/obminfx
