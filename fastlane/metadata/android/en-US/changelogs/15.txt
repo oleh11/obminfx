@@ -1,0 +1,4 @@
+* Polish and German: pick them in Settings
+* Back button closes an open sheet or the scanner first
+* Long-press the app icon: Scan prices or Check my card
+* Faster price scanner
