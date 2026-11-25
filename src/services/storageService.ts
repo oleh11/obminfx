@@ -5,7 +5,6 @@ const KEYS = {
   PINNED_CURRENCIES: 'app_pinned_currencies_v1',
   FAVORITE_CURRENCIES: 'app_favorite_currencies_v1',
   BASE_CURRENCY: 'app_base_currency_v1',
-  TARGET_CURRENCY: 'app_target_currency_v1',
   BANK_FEE_PCT: 'app_bank_fee_pct_v1',
   ACTIVE_SOURCE: 'app_active_source_v1',
   HAPTIC_ENABLED: 'app_haptic_enabled_v1',
@@ -83,15 +82,6 @@ export class StorageService {
     } catch {}
   }
 
-  static getTargetCurrency(): string {
-    const code = localStorage.getItem(KEYS.TARGET_CURRENCY);
-    return code && !isExcludedCurrency(code) ? code : 'UAH';
-  }
-
-  static setTargetCurrency(code: string): void {
-    localStorage.setItem(KEYS.TARGET_CURRENCY, code);
-  }
-
   static getBankFeePct(): number {
     const val = localStorage.getItem(KEYS.BANK_FEE_PCT);
     return val !== null ? parseFloat(val) : 2.0; // Default 2.0% average bank rate
@@ -142,28 +132,5 @@ export class StorageService {
         navigator.vibrate(10);
       } catch {}
     }
-  }
-
-  /**
-   * Diagnostic inspector for Debug Tab: returns all stored keys and raw values
-   */
-  static getStorageDebugDump(): Record<string, any> {
-    const dump: Record<string, any> = {};
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          const raw = localStorage.getItem(key);
-          try {
-            dump[key] = JSON.parse(raw || '');
-          } catch {
-            dump[key] = raw;
-          }
-        }
-      }
-    } catch (e) {
-      dump['error'] = String(e);
-    }
-    return dump;
   }
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="scan_prices"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_scan_short"
+        android:shortcutLongLabel="@string/shortcut_scan_long">
+        <intent
+            android:action="com.obminfx.app.ACTION_SCAN"
+            android:targetPackage="com.obminfx.app"
+            android:targetClass="com.obminfx.app.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="check_card"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_check_short"
+        android:shortcutLongLabel="@string/shortcut_check_long">
+        <intent
+            android:action="com.obminfx.app.ACTION_CHECK_CARD"
+            android:targetPackage="com.obminfx.app"
+            android:targetClass="com.obminfx.app.MainActivity" />
+    </shortcut>
+</shortcuts>

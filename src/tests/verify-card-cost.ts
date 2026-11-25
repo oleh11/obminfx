@@ -1,4 +1,4 @@
-import { estimateCardCost, settlementDates, presetFromEstimate, parseAmount } from '../services/cardCostEstimator';
+import { estimateCardCost, settlementDates, presetFromEstimate, parseAmount, compareDccOffer } from '../services/cardCostEstimator';
 import { RateService } from '../services/rateService';
 
 let passed = 0;
@@ -96,6 +96,23 @@ async function runTests() {
 
   const btc = await RateService.getOfficialRates('BTC', 'UAH', ['2026-11-05']);
   assert(btc === null, 'Crypto has no official rate');
+
+  // 9. Terminal DCC comparison
+  // 100 EUR at 45.00 UAH/EUR with 2% card fee => 4,590 UAH; terminal offers 4,850 UAH
+  const dccLocalWins = compareDccOffer(100, 4850, 45, 2);
+  assert(
+    !!dccLocalWins && dccLocalWins.payLocalIsCheaper && near(dccLocalWins.cardCost, 4590) && near(dccLocalWins.difference, 260),
+    'DCC: paying in local currency wins when terminal adds markup',
+    JSON.stringify(dccLocalWins)
+  );
+  // Terminal offers 4,520 UAH while card with 2% fee costs 4,590 UAH
+  const dccTermWins = compareDccOffer(100, 4520, 45, 2);
+  assert(
+    !!dccTermWins && !dccTermWins.payLocalIsCheaper && near(dccTermWins.difference, -70),
+    'DCC: detects when terminal offer is cheaper than card fee',
+    JSON.stringify(dccTermWins)
+  );
+  assert(compareDccOffer(0, 100, 45, 2) === null && compareDccOffer(100, -1, 45, 2) === null, 'DCC: rejects invalid amounts');
 
   console.log(`\n=== Card Cost Results: ${passed}/${total} Passed ===`);
   if (passed !== total) throw new Error(`Card cost tests failed: ${passed}/${total}`);

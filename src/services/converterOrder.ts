@@ -17,3 +17,35 @@ export function orderConverterCurrencies(pinned: string[], favorites: string[], 
 export function pairCurrency(pinned: string[], favorites: string[], base: string): string {
   return orderConverterCurrencies(pinned, favorites, base)[0] ?? (base === 'USD' ? 'EUR' : 'USD');
 }
+
+/** Price scanner dropdown: Converter's base (when different from home), Converter's list, then all other codes A-Z, excluding homeCurrency */
+export function scannerCurrencyOptions(
+  pinned: string[],
+  favorites: string[],
+  baseCurrency: string,
+  homeCurrency: string,
+  availableCodes: string[]
+): string[] {
+  const seen = new Set<string>([homeCurrency]);
+  const out: string[] = [];
+  const push = (code: string) => {
+    if (code && !seen.has(code)) {
+      seen.add(code);
+      out.push(code);
+    }
+  };
+  push(baseCurrency);
+  for (const code of orderConverterCurrencies(pinned, favorites, homeCurrency)) push(code);
+  for (const code of [...availableCodes].sort()) push(code);
+  return out;
+}
+
+/** Default currency for price tags: Converter's base when traveling (base != home), else the top paired currency */
+export function defaultScannerCurrency(
+  pinned: string[],
+  favorites: string[],
+  baseCurrency: string,
+  homeCurrency: string
+): string {
+  return baseCurrency !== homeCurrency ? baseCurrency : pairCurrency(pinned, favorites, homeCurrency);
+}

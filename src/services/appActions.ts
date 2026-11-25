@@ -1,13 +1,38 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle, registerPlugin } from '@capacitor/core';
 
 /** Native side: android/app/src/main/java/com/obminfx/app/AppActionsPlugin.java */
 interface AppActionsPlugin {
   share(options: { text: string; title?: string }): Promise<void>;
   openUrl(options: { url: string; fallback?: string }): Promise<void>;
+  setOverlayOpen(options: { open: boolean }): Promise<void>;
+  addListener(event: 'backPress', fn: () => void): Promise<PluginListenerHandle>;
 }
 
 const AppActions = registerPlugin<AppActionsPlugin>('AppActions');
 const isAndroid = () => Capacitor.getPlatform() === 'android';
+
+/** Tells native Android whether an in-app modal/scanner is open so system Back closes it first. */
+export function setNativeOverlayOpen(open: boolean): void {
+  if (!isAndroid()) return;
+  AppActions.setOverlayOpen({ open }).catch(() => {});
+}
+
+/** Subscribes to native Android back-button presses when an overlay is open. */
+export function listenForBackPress(onBack: () => void): () => void {
+  if (!isAndroid()) return () => {};
+  let handle: PluginListenerHandle | null = null;
+  let stopped = false;
+  AppActions.addListener('backPress', onBack)
+    .then(h => {
+      if (stopped) h.remove();
+      else handle = h;
+    })
+    .catch(() => {});
+  return () => {
+    stopped = true;
+    handle?.remove();
+  };
+}
 
 export const APP_ID = 'com.obminfx.app';
 export const PLAY_URL = `https://play.google.com/store/apps/details?id=${APP_ID}`;

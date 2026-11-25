@@ -24,9 +24,14 @@ interface PriceScannerProps {
 
 type Status = 'starting' | 'loading' | 'scanning' | 'paused' | 'denied' | 'error';
 
-/** Longest side of the frame given to the text reader: big enough for shelf tags, small enough to stay quick */
-const READ_SIZE = 1280;
+/** Longest side of the frame given to the text reader: fast and sharp enough for shelf tags */
+const READ_SIZE = 960;
 const PAUSE_BETWEEN_READS_MS = 250;
+const THUMB_SIZE = 32;
+/** Longest wait for the background image worker before scanning carries on without it */
+const WORKER_TIMEOUT_MS = 3000;
+const DIFF_THRESHOLD = 6;
+const MAX_SKIP_MS = 2000;
 /** 1×1 transparent GIF, so the video never shows the WebView's default play-button poster */
 const BLANK_POSTER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
@@ -73,13 +78,18 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
   const pickedRef = useRef(false);
   const codesRef = useRef(currencyCodes);
   codesRef.current = currencyCodes;
+  const prevThumbRef = useRef<Uint8Array | null>(null);
+  const lastReadAtRef = useRef<number>(0);
 
   useEffect(() => {
     if (!isOpen) return;
     setPriceCurrency(defaultPriceCurrency);
+    setWithFee(bankFeePct > 0);
     setDetected(null);
     pickedRef.current = false;
-  }, [isOpen, defaultPriceCurrency]);
+    prevThumbRef.current = null;
+    lastReadAtRef.current = 0;
+  }, [isOpen, defaultPriceCurrency, bankFeePct]);
 
   // Camera, then the read loop; everything stops when the scanner closes
   useEffect(() => {
@@ -88,7 +98,73 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
     let stream: MediaStream | null = null;
     let timer: number | undefined;
     const canvas = document.createElement('canvas');
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = THUMB_SIZE;
+    thumbCanvas.height = THUMB_SIZE;
+    const thumbCtx = thumbCanvas.getContext('2d', { willReadFrequently: true });
     let smallCanvas: HTMLCanvasElement | null = null;
+
+    // Offload pixel polarity normalization to a Web Worker (falls back to main thread if unavailable)
+    let worker: Worker | null = null;
+    let workerSeq = 0;
+    const pendingWorker = new Map<number, { resolve: (buf: ArrayBuffer) => void; reject: (err: unknown) => void }>();
+    // A failed or stuck worker must never leave a scan waiting: fail every pending job and stop using it
+    const dropWorker = (reason: unknown) => {
+      worker?.terminate();
+      worker = null;
+      for (const job of pendingWorker.values()) job.reject(reason);
+      pendingWorker.clear();
+    };
+    try {
+      worker = new Worker(new URL('../services/polarityWorker.ts', import.meta.url), { type: 'module' });
+      worker.onmessage = (e: MessageEvent<{ id: number; buffer: ArrayBuffer }>) => {
+        const job = pendingWorker.get(e.data.id);
+        if (job) {
+          pendingWorker.delete(e.data.id);
+          job.resolve(e.data.buffer);
+        }
+      };
+      worker.onerror = e => dropWorker(e);
+      worker.onmessageerror = e => dropWorker(e);
+    } catch {
+      worker = null;
+    }
+
+    const normalizeCanvas = async (c: HTMLCanvasElement, cx: CanvasRenderingContext2D | null) => {
+      if (!cx) return;
+      if (worker) {
+        // The pixel buffer is handed to the worker, so the fallback below reads the canvas again
+        const img = cx.getImageData(0, 0, c.width, c.height);
+        try {
+          const id = ++workerSeq;
+          const buf = img.data.buffer;
+          const outBuf = await new Promise<ArrayBuffer>((resolve, reject) => {
+            const timer = window.setTimeout(() => dropWorker(new Error('Worker timed out')), WORKER_TIMEOUT_MS);
+            pendingWorker.set(id, {
+              resolve: b => { window.clearTimeout(timer); resolve(b); },
+              reject: err => { window.clearTimeout(timer); reject(err); }
+            });
+            try {
+              worker!.postMessage({ id, buffer: buf, width: c.width, height: c.height }, [buf]);
+            } catch (err) {
+              pendingWorker.delete(id);
+              window.clearTimeout(timer);
+              reject(err);
+            }
+          });
+          if (!cancelled) {
+            cx.putImageData(new ImageData(new Uint8ClampedArray(outBuf), c.width, c.height), 0, 0);
+          }
+          return;
+        } catch {
+          // Fall back to the main thread below
+        }
+      }
+      const img = cx.getImageData(0, 0, c.width, c.height);
+      normalizePolarity(img.data, c.width, c.height);
+      cx.putImageData(img, 0, 0);
+    };
+
     pausedRef.current = false;
     setLive(false);
     setPrices([]);
@@ -112,48 +188,72 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
         canvas.height = Math.round(sh * scale);
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx?.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-        try {
-          // The reader misses very large text, so big tag prices are read again from a smaller copy.
-          // Both copies are flipped to dark-on-light first (sale tags often print white on red).
-          const small = smallCanvas ?? (smallCanvas = document.createElement('canvas'));
-          small.width = Math.round(canvas.width * SMALL_FACTOR);
-          small.height = Math.round(canvas.height * SMALL_FACTOR);
-          const sctx = small.getContext('2d', { willReadFrequently: true });
-          sctx?.drawImage(canvas, 0, 0, small.width, small.height);
-          for (const [c, cx] of [[canvas, ctx], [small, sctx]] as const) {
-            if (!cx) continue;
-            const img = cx.getImageData(0, 0, c.width, c.height);
-            normalizePolarity(img.data, c.width, c.height);
-            cx.putImageData(img, 0, 0);
+
+        // Skip redundant OCR when consecutive frames are nearly identical
+        let shouldRead = true;
+        if (thumbCtx) {
+          thumbCtx.drawImage(canvas, 0, 0, THUMB_SIZE, THUMB_SIZE);
+          const td = thumbCtx.getImageData(0, 0, THUMB_SIZE, THUMB_SIZE).data;
+          const lums = new Uint8Array(THUMB_SIZE * THUMB_SIZE);
+          for (let i = 0; i < lums.length; i++) {
+            lums[i] = (td[i * 4] * 77 + td[i * 4 + 1] * 150 + td[i * 4 + 2] * 29) >> 8;
           }
-          const up = 1 / SMALL_FACTOR;
-          const smallLines = sctx ? await readLines(small) : [];
-          const fullLines = await readLines(canvas);
-          const big = findPrices(smallLines).map(p => ({
-            ...p,
-            bbox: { x0: p.bbox.x0 * up, y0: p.bbox.y0 * up, x1: p.bbox.x1 * up, y1: p.bbox.y1 * up }
-          }));
-          const found = mergePrices(big, findPrices(fullLines));
-          if (cancelled) return;
-          // Follow the currency printed on the tags ("€ 12,99") until the user picks one
-          const printed = detectCurrency([...smallLines, ...fullLines]);
-          if (printed && !pickedRef.current && codesRef.current.includes(printed)) {
-            setPriceCurrency(printed);
-            setDetected(printed);
+          const prev = prevThumbRef.current;
+          const now = Date.now();
+          if (prev && now - lastReadAtRef.current < MAX_SKIP_MS) {
+            let diff = 0;
+            for (let i = 0; i < lums.length; i++) diff += Math.abs(lums[i] - prev[i]);
+            if (diff / lums.length < DIFF_THRESHOLD) {
+              shouldRead = false;
+            }
           }
-          // Boxes back in the camera's own pixels, so they can be placed over the preview at any size
-          const back = 1 / scale;
-          if (!pausedRef.current) {
-            setPrices(found.map(p => ({
+          if (shouldRead) {
+            prevThumbRef.current = lums;
+            lastReadAtRef.current = now;
+          }
+        }
+
+        if (shouldRead) {
+          try {
+            // The reader misses very large text, so big tag prices are read again from a smaller copy.
+            // Both copies are flipped to dark-on-light first (sale tags often print white on red).
+            const small = smallCanvas ?? (smallCanvas = document.createElement('canvas'));
+            small.width = Math.round(canvas.width * SMALL_FACTOR);
+            small.height = Math.round(canvas.height * SMALL_FACTOR);
+            const sctx = small.getContext('2d', { willReadFrequently: true });
+            sctx?.drawImage(canvas, 0, 0, small.width, small.height);
+            await Promise.all([normalizeCanvas(canvas, ctx), normalizeCanvas(small, sctx)]);
+            if (cancelled) return;
+
+            const up = 1 / SMALL_FACTOR;
+            const smallLines = sctx ? await readLines(small) : [];
+            const fullLines = await readLines(canvas);
+            const big = findPrices(smallLines).map(p => ({
               ...p,
-              bbox: { x0: sx + p.bbox.x0 * back, y0: sy + p.bbox.y0 * back, x1: sx + p.bbox.x1 * back, y1: sy + p.bbox.y1 * back }
-            })));
-            setStatus('scanning');
+              bbox: { x0: p.bbox.x0 * up, y0: p.bbox.y0 * up, x1: p.bbox.x1 * up, y1: p.bbox.y1 * up }
+            }));
+            const found = mergePrices(big, findPrices(fullLines));
+            if (cancelled) return;
+            // Follow the currency printed on the tags ("€ 12,99") until the user picks one
+            const printed = detectCurrency([...smallLines, ...fullLines]);
+            if (printed && !pickedRef.current && codesRef.current.includes(printed)) {
+              setPriceCurrency(printed);
+              setDetected(printed);
+            }
+            // Boxes back in the camera's own pixels, so they can be placed over the preview at any size
+            const back = 1 / scale;
+            if (!pausedRef.current) {
+              setPrices(found.map(p => ({
+                ...p,
+                bbox: { x0: sx + p.bbox.x0 * back, y0: sy + p.bbox.y0 * back, x1: sx + p.bbox.x1 * back, y1: sy + p.bbox.y1 * back }
+              })));
+              setStatus('scanning');
+            }
+          } catch (err) {
+            console.error('Price scan failed', err);
+            if (!cancelled) setStatus('error');
+            return;
           }
-        } catch (err) {
-          console.error('Price scan failed', err);
-          if (!cancelled) setStatus('error');
-          return;
         }
       }
       timer = window.setTimeout(readFrame, PAUSE_BETWEEN_READS_MS);
@@ -185,6 +285,7 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      dropWorker(new Error('Scanner closed'));
       stream?.getTracks().forEach(tr => tr.stop());
       if (videoRef.current) videoRef.current.srcObject = null;
       stopOcr();
@@ -228,7 +329,10 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
     const video = videoRef.current;
     pausedRef.current = !pausedRef.current;
     if (pausedRef.current) video?.pause();
-    else video?.play().catch(() => {});
+    else {
+      prevThumbRef.current = null;
+      video?.play().catch(() => {});
+    }
     setStatus(pausedRef.current ? 'paused' : 'scanning');
   };
 
@@ -329,6 +433,7 @@ export const PriceScanner: React.FC<PriceScannerProps> = ({
               value={priceCurrency}
               onChange={e => {
                 pickedRef.current = true;
+                prevThumbRef.current = null;
                 setDetected(null);
                 setPriceCurrency(e.target.value);
               }}

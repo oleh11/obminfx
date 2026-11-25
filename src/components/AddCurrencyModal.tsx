@@ -81,6 +81,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
               StorageService.triggerHaptic();
               onClose();
             }}
+            aria-label={t('common.close')}
             className="p-2 rounded-full bg-card hover:bg-inset2 text-muted hover:text-ink transition-colors"
           >
             <X className="w-5 h-5" />
@@ -106,6 +107,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                 onClick={() => setSearch('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-muted hover:text-ink"
                 title={t('search.clear')}
+                aria-label={t('search.clear')}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -189,7 +191,8 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                             onToggleFavorite(curr.code);
                           }}
                           className="p-2 rounded-full text-accent hover:bg-accent/[0.06] transition-colors"
-                          title={t('add.favorite')}
+                          title={t('common.removeFav')}
+                          aria-label={t('common.removeFav')}
                         >
                           <Star className="w-4 h-4 fill-accent" />
                         </button>
@@ -198,6 +201,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                             StorageService.triggerHaptic();
                             onToggleCurrency(curr.code);
                           }}
+                          aria-label={isPinned ? t('conv.remove') : t('conv.addCurrency')}
                           className={'p-2 rounded-full transition-all ' + (isPinned ? 'bg-accent text-onaccent shadow-sm' : 'bg-card text-muted hover:text-ink border border-line/[0.08]')}
                         >
                           {isPinned ? <Check className="w-4 h-4 stroke-[3]" /> : <Plus className="w-4 h-4" />}
@@ -248,6 +252,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                         }}
                         className="p-2 rounded-full text-muted hover:text-accent hover:bg-accent/[0.06] transition-colors"
                         title={t('common.addFav')}
+                        aria-label={t('common.addFav')}
                       >
                         <Star className="w-4 h-4" />
                       </button>
@@ -256,6 +261,7 @@ export const AddCurrencyModal: React.FC<AddCurrencyModalProps> = ({
                           StorageService.triggerHaptic();
                           onToggleCurrency(curr.code);
                         }}
+                        aria-label={isPinned ? t('conv.remove') : t('conv.addCurrency')}
                         className={'p-2 rounded-full transition-all ' + (isPinned ? 'bg-accent text-onaccent shadow-sm' : 'bg-card text-muted hover:text-ink border border-line/[0.08]')}
                       >
                         {isPinned ? <Check className="w-4 h-4 stroke-[3]" /> : <Plus className="w-4 h-4" />}

@@ -45,7 +45,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'Roboto', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'Segoe UI', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
       boxShadow: {
         'm3-1': '0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30)',

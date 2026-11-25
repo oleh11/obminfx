@@ -25,6 +25,8 @@ export interface AtmWithdrawal {
   refundHome: number;
   /** Everything taken from the card, in `homeCurrency` */
   totalHome: number;
+  /** Whether this withdrawal's ATM fee has already been refunded on a statement */
+  refunded?: boolean;
 }
 
 export interface WithdrawalCost {
@@ -67,7 +69,8 @@ function isWithdrawal(w: any): w is AtmWithdrawal {
     && code(w.currency) && code(w.homeCurrency)
     && num(w.amount) && w.amount > 0 && num(w.atmFee) && w.atmFee >= 0
     && num(w.rate) && w.rate > 0 && num(w.cardFeePct) && w.cardFeePct >= 0
-    && num(w.refundHome) && num(w.totalHome);
+    && num(w.refundHome) && num(w.totalHome)
+    && (w.refunded === undefined || typeof w.refunded === 'boolean');
 }
 
 /** Newest first */
@@ -109,13 +112,34 @@ export function removeWithdrawal(list: AtmWithdrawal[], id: string): AtmWithdraw
   return list.filter(w => w.id !== id);
 }
 
+export function updateWithdrawal(
+  list: AtmWithdrawal[],
+  id: string,
+  input: { date: string; currency: string; amount: number; atmFee: number; homeCurrency: string; rate: number; cardFeePct: number }
+): AtmWithdrawal[] {
+  const cost = withdrawalCost(input.amount, input.atmFee, input.rate, input.cardFeePct);
+  if (!cost || !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return list;
+  return list
+    .map(w => w.id === id ? { ...w, ...input, refundHome: cost.atmFeeHome, totalHome: cost.totalHome } : w)
+    .sort(byDateDesc);
+}
+
+export function toggleWithdrawalRefunded(list: AtmWithdrawal[], id: string): AtmWithdrawal[] {
+  return list.map(w => w.id === id ? { ...w, refunded: !w.refunded } : w);
+}
+
 export interface MonthTotal {
   /** YYYY-MM */
   month: string;
   homeCurrency: string;
   count: number;
-  /** ATM fees to be refunded */
+  /** ATM fees to be refunded (total across pending and refunded) */
   refund: number;
+  /** ATM fees not yet marked refunded */
+  pendingRefund: number;
+  /** ATM fees already marked refunded */
+  refundedAmount: number;
+  refundedCount: number;
   /** Everything taken from the card */
   total: number;
   withdrawals: AtmWithdrawal[];
@@ -129,13 +153,45 @@ export function monthTotals(list: AtmWithdrawal[]): MonthTotal[] {
     const key = `${month}|${w.homeCurrency}`;
     let g = groups.get(key);
     if (!g) {
-      g = { month, homeCurrency: w.homeCurrency, count: 0, refund: 0, total: 0, withdrawals: [] };
+      g = {
+        month,
+        homeCurrency: w.homeCurrency,
+        count: 0,
+        refund: 0,
+        pendingRefund: 0,
+        refundedAmount: 0,
+        refundedCount: 0,
+        total: 0,
+        withdrawals: []
+      };
       groups.set(key, g);
     }
     g.count++;
     g.refund += w.refundHome;
+    if (w.refunded) {
+      g.refundedAmount += w.refundHome;
+      g.refundedCount++;
+    } else {
+      g.pendingRefund += w.refundHome;
+    }
     g.total += w.totalHome;
     g.withdrawals.push(w);
   }
   return [...groups.values()];
+}
+
+export function formatMonthSummaryText(
+  m: MonthTotal,
+  monthTitle: string,
+  formatMoney: (n: number, code: string) => string,
+  labels: { pending: string; refunded: string; totalRefunds: string; feeLabel: string }
+): string {
+  const lines = [
+    `${monthTitle} — ${labels.totalRefunds}: ${formatMoney(m.refund, m.homeCurrency)} (${labels.pending}: ${formatMoney(m.pendingRefund, m.homeCurrency)}, ${labels.refunded}: ${formatMoney(m.refundedAmount, m.homeCurrency)})`,
+    ...m.withdrawals.map(w => {
+      const status = w.refunded ? `[${labels.refunded}]` : `[${labels.pending}]`;
+      return `- ${w.date}: ${formatMoney(w.amount, w.currency)} (${labels.feeLabel} ${formatMoney(w.atmFee, w.currency)} → ${formatMoney(w.refundHome, w.homeCurrency)}) ${status}`;
+    })
+  ];
+  return lines.join('\n');
 }

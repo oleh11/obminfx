@@ -108,3 +108,42 @@ export function presetFromEstimate(markupPct: number): number {
   if (!isFinite(markupPct)) return 0;
   return Math.min(10, Math.max(0, Math.round(markupPct * 10) / 10));
 }
+
+export interface DccComparison {
+  cardCost: number;
+  terminalHomeAmount: number;
+  /** terminalHomeAmount - cardCost; positive means paying in local currency saves money */
+  difference: number;
+  terminalMarkupPct: number;
+  savingsPct: number;
+  payLocalIsCheaper: boolean;
+}
+
+/**
+ * Compares paying in the local currency (at liveRate + cardFeePct) against a terminal's Dynamic Currency Conversion offer.
+ */
+export function compareDccOffer(
+  localAmount: number,
+  terminalHomeAmount: number,
+  liveRate: number,
+  cardFeePct: number
+): DccComparison | null {
+  if (
+    !(localAmount > 0) || !(terminalHomeAmount > 0) || !(liveRate > 0) || !(cardFeePct >= 0) ||
+    !isFinite(localAmount) || !isFinite(terminalHomeAmount) || !isFinite(liveRate) || !isFinite(cardFeePct)
+  ) {
+    return null;
+  }
+  const cardCost = localAmount * liveRate * (1 + cardFeePct / 100);
+  const difference = terminalHomeAmount - cardCost;
+  const terminalMarkupPct = ((terminalHomeAmount / localAmount) / liveRate - 1) * 100;
+  const savingsPct = cardCost > 0 ? (difference / cardCost) * 100 : 0;
+  return {
+    cardCost,
+    terminalHomeAmount,
+    difference,
+    terminalMarkupPct,
+    savingsPct,
+    payLocalIsCheaper: difference >= 0,
+  };
+}

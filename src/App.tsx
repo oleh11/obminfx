@@ -1,28 +1,46 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { ConverterTab } from './components/ConverterTab';
-import { BankFeeCalculatorTab } from './components/BankFeeCalculatorTab';
-import { HistoricalChartsTab } from './components/HistoricalChartsTab';
-import { SourcesTab } from './components/SourcesTab';
 import { BottomNavigation, AppTabType } from './components/BottomNavigation';
 import { AddCurrencyModal } from './components/AddCurrencyModal';
 import { SelectBaseCurrencyModal } from './components/SelectBaseCurrencyModal';
 import { SourceSelectorModal } from './components/SourceSelectorModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AppTour } from './components/AppTour';
-import { PriceScanner } from './components/PriceScanner';
 import { RateService } from './services/rateService';
 import { StorageService, DEFAULT_FAVORITES } from './services/storageService';
 import { RateSourceId, ExchangeRateData } from './types/currency';
 import { DEFAULT_PINNED_CURRENCIES } from './data/currencies';
-import { listenForSharedText } from './services/shareTarget';
-import { pairCurrency, orderConverterCurrencies } from './services/converterOrder';
+import { listenForSharedText, listenForLaunchAction } from './services/shareTarget';
+import { listenForBackPress, setNativeOverlayOpen } from './services/appActions';
+import { pairCurrency, scannerCurrencyOptions, defaultScannerCurrency } from './services/converterOrder';
+
+const BankFeeCalculatorTab = lazy(() =>
+  import('./components/BankFeeCalculatorTab').then(m => ({ default: m.BankFeeCalculatorTab }))
+);
+const HistoricalChartsTab = lazy(() =>
+  import('./components/HistoricalChartsTab').then(m => ({ default: m.HistoricalChartsTab }))
+);
+const SourcesTab = lazy(() =>
+  import('./components/SourcesTab').then(m => ({ default: m.SourcesTab }))
+);
+const PriceScanner = lazy(() =>
+  import('./components/PriceScanner').then(m => ({ default: m.PriceScanner }))
+);
+
+const TabFallback: React.FC = () => (
+  <div className="space-y-4 w-full py-2" aria-hidden="true">
+    <div className="h-24 rounded-[24px] bg-card/70 animate-pulse" />
+    <div className="h-56 rounded-[24px] bg-card/70 animate-pulse" />
+  </div>
+);
 
 export const App: React.FC = () => {
   // Navigation & Modal states
   const [activeTab, setActiveTab] = useState<AppTabType>('converter');
   // A bank notification or SMS shared to the app opens Check my card with it
   const [sharedText, setSharedText] = useState<{ text: string; nonce: number } | null>(null);
+  const [requestedFeeMode, setRequestedFeeMode] = useState<{ mode: 'simulate' | 'check' | 'atm'; nonce: number } | null>(null);
   useEffect(() => listenForSharedText(text => {
     setSharedText({ text, nonce: Date.now() });
     setActiveTab('fee_calculator');
@@ -34,6 +52,15 @@ export const App: React.FC = () => {
   // First launch walkthrough; can be shown again from Settings
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [isTourOpen, setIsTourOpen] = useState<boolean>(() => !StorageService.getTourSeen());
+
+  useEffect(() => listenForLaunchAction(action => {
+    if (action === 'scan') {
+      setIsScannerOpen(true);
+    } else if (action === 'check_card') {
+      setRequestedFeeMode({ mode: 'check', nonce: Date.now() });
+      setActiveTab('fee_calculator');
+    }
+  }), []);
 
   // App core conversion states
   const [baseCurrency, setBaseCurrency] = useState<string>(() => StorageService.getBaseCurrency() || 'USD');
@@ -53,32 +80,28 @@ export const App: React.FC = () => {
 
   // Exchange rate data, last updated timestamp & network states
   const [rateData, setRateData] = useState<ExchangeRateData | null>(null);
-  // Price tag currencies for the scanner: the Converter list first, then every other currency with a rate
-  const scannerCurrencies = useMemo(() => {
-    const top = orderConverterCurrencies(pinnedCurrencies, favoriteCurrencies, baseCurrency);
-    const rest = RateService.getAvailableCurrenciesFromRates(rateData)
-      .map(c => c.code)
-      .filter(c => c !== baseCurrency && !top.includes(c))
-      .sort();
-    return [...top, ...rest];
-  }, [pinnedCurrencies, favoriteCurrencies, baseCurrency, rateData]);
+  const rateDataRef = useRef<ExchangeRateData | null>(null);
+  rateDataRef.current = rateData;
+  const activeSourceRef = useRef<RateSourceId>(activeSourceId);
+  activeSourceRef.current = activeSourceId;
+
+  // Price tag currencies for the scanner: excludes homeCurrency (never baseCurrency), travels seamlessly
+  const availableCodes = useMemo(
+    () => RateService.getAvailableCurrenciesFromRates(rateData).map(c => c.code),
+    [rateData]
+  );
+  const scannerCurrencies = useMemo(
+    () => scannerCurrencyOptions(pinnedCurrencies, favoriteCurrencies, baseCurrency, homeCurrency, availableCodes),
+    [pinnedCurrencies, favoriteCurrencies, baseCurrency, homeCurrency, availableCodes]
+  );
+  const scannerDefaultCurrency = useMemo(
+    () => defaultScannerCurrency(pinnedCurrencies, favoriteCurrencies, baseCurrency, homeCurrency),
+    [pinnedCurrencies, favoriteCurrencies, baseCurrency, homeCurrency]
+  );
+
   const [lastUpdatedTime, setLastUpdatedTime] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-
-  // Online / Offline listeners
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   // Fetch exchange rates for active source
   const loadRates = useCallback(async (sourceId: RateSourceId, forceRefresh: boolean = false) => {
@@ -94,10 +117,68 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Online / Offline & visibility auto-refresh listeners
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      if (RateService.isStale(rateDataRef.current)) {
+        loadRates(activeSourceRef.current, true);
+      }
+    };
+    const handleOffline = () => setIsOnline(false);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine && RateService.isStale(rateDataRef.current)) {
+        loadRates(activeSourceRef.current, false);
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [loadRates]);
+
   // Fetch rates on source change or mount
-  useEffect(() => { 
-    loadRates(activeSourceId); 
+  useEffect(() => {
+    loadRates(activeSourceId);
   }, [activeSourceId, loadRates]);
+
+  // Overlay back-button & Escape dismissal
+  const hasOverlay = isScannerOpen || isTourOpen || isAddModalOpen || isSelectBaseModalOpen || isSourceModalOpen || isSettingsModalOpen;
+  useEffect(() => {
+    setNativeOverlayOpen(hasOverlay);
+  }, [hasOverlay]);
+
+  const closeTopOverlay = useCallback(() => {
+    if (isScannerOpen) setIsScannerOpen(false);
+    else if (isTourOpen) {
+      StorageService.setTourSeen();
+      setIsTourOpen(false);
+      setActiveTab('converter');
+    } else if (isAddModalOpen) setIsAddModalOpen(false);
+    else if (isSelectBaseModalOpen) setIsSelectBaseModalOpen(false);
+    else if (isSourceModalOpen) setIsSourceModalOpen(false);
+    else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
+  }, [isScannerOpen, isTourOpen, isAddModalOpen, isSelectBaseModalOpen, isSourceModalOpen, isSettingsModalOpen]);
+
+  useEffect(() => {
+    const unlistenBack = listenForBackPress(closeTopOverlay);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && hasOverlay) {
+        closeTopOverlay();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      unlistenBack();
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [closeTopOverlay, hasOverlay]);
 
   // Handlers
   const handleSelectSource = (newSourceId: RateSourceId) => {
@@ -179,11 +260,12 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
         isOnline={isOnline}
         lastUpdatedTime={lastUpdatedTime}
+        rateDate={rateData?.date ?? null}
         isFallback={!!rateData?.isFallback}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 px-4 py-4 overflow-y-auto w-full max-w-2xl mx-auto w-full pb-24">
+      <main className="flex-1 px-4 py-4 overflow-y-auto w-full max-w-2xl mx-auto pb-24">
         {activeTab === 'converter' && (
           <ConverterTab
             onOpenScanner={() => setIsScannerOpen(true)}
@@ -211,34 +293,41 @@ export const App: React.FC = () => {
         )}
 
         {activeTab === 'fee_calculator' && (
-          <BankFeeCalculatorTab
-            rateData={rateData}
-            baseCurrency={baseCurrency}
-            homeCurrency={homeCurrency}
-            targetCurrency={targetCurrency}
-            bankFeePct={bankFeePct}
-            onBankFeeChange={handleBankFeeChange}
-            sharedText={sharedText}
-          />
+          <Suspense fallback={<TabFallback />}>
+            <BankFeeCalculatorTab
+              rateData={rateData}
+              baseCurrency={baseCurrency}
+              homeCurrency={homeCurrency}
+              targetCurrency={targetCurrency}
+              bankFeePct={bankFeePct}
+              onBankFeeChange={handleBankFeeChange}
+              sharedText={sharedText}
+              requestedMode={requestedFeeMode}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'trends' && (
-          <HistoricalChartsTab
-            initialFrom={trendsPair?.from || baseCurrency}
-            initialTo={trendsPair?.to || targetCurrency}
-          />
+          <Suspense fallback={<TabFallback />}>
+            <HistoricalChartsTab
+              initialFrom={trendsPair?.from || baseCurrency}
+              initialTo={trendsPair?.to || targetCurrency}
+            />
+          </Suspense>
         )}
 
         {activeTab === 'sources' && (
-          <SourcesTab
-            activeSourceId={activeSourceId}
-            onSelectSource={handleSelectSource}
-            baseCurrency={baseCurrency}
-            targetCurrency={targetCurrency}
-            onRefreshAll={() => loadRates(activeSourceId, true)}
-            isRefreshing={isRefreshing}
-            rateData={rateData}
-          />
+          <Suspense fallback={<TabFallback />}>
+            <SourcesTab
+              activeSourceId={activeSourceId}
+              onSelectSource={handleSelectSource}
+              baseCurrency={baseCurrency}
+              targetCurrency={targetCurrency}
+              onRefreshAll={() => loadRates(activeSourceId, true)}
+              isRefreshing={isRefreshing}
+              rateData={rateData}
+            />
+          </Suspense>
         )}
       </main>
 
@@ -293,15 +382,19 @@ export const App: React.FC = () => {
         onOpenTour={() => setIsTourOpen(true)}
       />
 
-      <PriceScanner
-        isOpen={isScannerOpen}
-        onClose={() => setIsScannerOpen(false)}
-        rateData={rateData}
-        homeCurrency={homeCurrency}
-        defaultPriceCurrency={targetCurrency}
-        currencyCodes={scannerCurrencies}
-        bankFeePct={bankFeePct}
-      />
+      {isScannerOpen && (
+        <Suspense fallback={<div className="fixed inset-0 z-[70] bg-black" />}>
+          <PriceScanner
+            isOpen={isScannerOpen}
+            onClose={() => setIsScannerOpen(false)}
+            rateData={rateData}
+            homeCurrency={homeCurrency}
+            defaultPriceCurrency={scannerDefaultCurrency}
+            currencyCodes={scannerCurrencies}
+            bankFeePct={bankFeePct}
+          />
+        </Suspense>
+      )}
 
       <AppTour
         isOpen={isTourOpen}

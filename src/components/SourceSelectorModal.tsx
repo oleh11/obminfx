@@ -69,6 +69,7 @@ export const SourceSelectorModal: React.FC<SourceSelectorModalProps> = ({
               StorageService.triggerHaptic();
               onClose();
             }}
+            aria-label={t('common.close')}
             className="p-2 rounded-full bg-inset hover:bg-inset2 text-muted hover:text-ink transition-colors"
           >
             <X className="w-5 h-5" />

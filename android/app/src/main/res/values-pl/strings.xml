@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_check_card">Sprawdź prowizję karty</string>
+    <string name="shortcut_scan_short">Skanuj ceny</string>
+    <string name="shortcut_scan_long">Skanuj ceny aparatem</string>
+    <string name="shortcut_check_short">Sprawdź kartę</string>
+    <string name="shortcut_check_long">Sprawdź rzeczywistą prowizję karty</string>
+</resources>

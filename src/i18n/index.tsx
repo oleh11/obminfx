@@ -3,7 +3,7 @@ import type { TKey } from './en';
 import type { Currency, RateSourceId } from '../types/currency';
 import { getCurrencyMeta } from '../data/currencies';
 import {
-  Lang, TParams, LOCALES, LANG_STORAGE_KEY,
+  Lang, LANGS, TParams, LOCALES, LANG_STORAGE_KEY,
   detectLang, translate, formatPct, sourceText, localizeCurrency
 } from './core';
 
@@ -13,7 +13,7 @@ export { LANGS } from './core';
 function initialLang(): Lang {
   try {
     const saved = localStorage.getItem(LANG_STORAGE_KEY);
-    if (saved === 'en' || saved === 'uk') return saved;
+    if (saved && (LANGS as string[]).includes(saved)) return saved as Lang;
   } catch {}
   return detectLang(typeof navigator !== 'undefined' ? navigator.language : undefined);
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StorageService } from '../services/storageService';
 import { Percent, Wallet, ShieldAlert, Info, X, ArrowRightLeft, Languages, SunMoon, Share2, Star, MessageSquare, ShieldCheck, Compass, Heart } from 'lucide-react';
 import { shareText, openStoreListing, sendFeedback, PLAY_URL } from '../services/appActions';
@@ -9,7 +9,12 @@ import { ALL_CURRENCIES } from '../data/currencies';
 
 const FIAT = [...ALL_CURRENCIES].filter(c => c.type === 'fiat').sort((a, b) => a.code.localeCompare(b.code));
 
-const LANGUAGE_NAMES: Record<Lang, string> = { en: 'English', uk: 'Українська' };
+const LANGUAGE_NAMES: Record<Lang, string> = {
+  en: 'English',
+  uk: 'Українська',
+  pl: 'Polski',
+  de: 'Deutsch'
+};
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -42,6 +47,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const { t, pct, currency, lang, setLang } = useT();
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const [copied, setCopied] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) setConfirmReset(false);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const supportActions = [
@@ -95,6 +106,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               StorageService.triggerHaptic();
               onClose();
             }}
+            aria-label={t('common.close')}
             className="p-2 rounded-full bg-inset hover:bg-inset2 text-muted hover:text-ink transition-colors"
           >
             <X className="w-5 h-5" />
@@ -273,16 +285,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <p className="text-xs text-muted mb-3">
               {t('settings.resetBody')}
             </p>
-            <button
-              onClick={() => {
-                StorageService.triggerHaptic();
-                onResetDefaults();
-                onClose();
-              }}
-              className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-98 text-[#fff] font-bold text-xs transition-all shadow-md shadow-red-600/20"
-            >
-              {t('settings.resetButton')}
-            </button>
+            {!confirmReset ? (
+              <button
+                onClick={() => {
+                  StorageService.triggerHaptic();
+                  setConfirmReset(true);
+                }}
+                className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-98 text-[#fff] font-bold text-xs transition-all shadow-md shadow-red-600/20"
+              >
+                {t('settings.resetButton')}
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    StorageService.triggerHaptic();
+                    setConfirmReset(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-inset hover:bg-inset2 text-ink font-bold text-xs border border-line/[0.08] transition-all"
+                >
+                  {t('settings.resetCancel')}
+                </button>
+                <button
+                  onClick={() => {
+                    StorageService.triggerHaptic();
+                    setConfirmReset(false);
+                    onResetDefaults();
+                    onClose();
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-98 text-[#fff] font-bold text-xs transition-all shadow-md shadow-red-600/20"
+                >
+                  {t('settings.resetConfirm')}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* About ObminFX */}

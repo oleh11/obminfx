@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { 
-  TrendingUp, TrendingDown, ArrowRightLeft, 
-  RefreshCw, Activity 
+import {
+  TrendingUp, TrendingDown, ArrowRightLeft,
+  RefreshCw, Activity
 } from "lucide-react";
-import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, 
-  Tooltip, CartesianGrid 
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
+  Tooltip, CartesianGrid
 } from "recharts";
 import { HistoricalDataSummary } from "../types/currency";
 import { ALL_CURRENCIES } from "../data/currencies";
@@ -20,6 +20,10 @@ interface HistoricalChartsTabProps {
   initialTo?: string;
 }
 
+const FIAT_CURRENCIES = [...ALL_CURRENCIES]
+  .filter(c => c.type === "fiat")
+  .sort((a, b) => a.code.localeCompare(b.code));
+
 export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
   initialFrom = "USD",
   initialTo = "UAH"
@@ -31,6 +35,15 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
   const [timeframe, setTimeframe] = useState<"7d" | "1m" | "3m" | "1y" | "5y">("1m");
   const [loading, setLoading] = useState<boolean>(true);
   const [chartData, setChartData] = useState<HistoricalDataSummary | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState<number>(0);
+
+  useEffect(() => {
+    setFromCurrency(initialFrom);
+  }, [initialFrom]);
+
+  useEffect(() => {
+    setToCurrency(initialTo);
+  }, [initialTo]);
 
   const fromMeta = currency(fromCurrency);
   const toMeta = currency(toCurrency);
@@ -41,22 +54,22 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
     return isNaN(d.getTime()) ? iso : d.toLocaleDateString(locale, opts);
   };
 
-  const fetchChartData = async () => {
-    setLoading(true);
-    try {
-      const data = await RateService.getHistoricalRates(fromCurrency, toCurrency, timeframe);
-      setChartData(data);
-    } catch (e) {
-      console.warn("Failed to load historical chart data", e);
-      setChartData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchChartData();
-  }, [fromCurrency, toCurrency, timeframe]);
+    let cancelled = false;
+    setLoading(true);
+    RateService.getHistoricalRates(fromCurrency, toCurrency, timeframe)
+      .then((data) => {
+        if (!cancelled) setChartData(data);
+      })
+      .catch((e) => {
+        console.warn("Failed to load historical chart data", e);
+        if (!cancelled) setChartData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [fromCurrency, toCurrency, timeframe, refreshNonce]);
 
   const handleSwap = () => {
     StorageService.triggerHaptic();
@@ -87,10 +100,11 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
         <button
           onClick={() => {
             StorageService.triggerHaptic();
-            fetchChartData();
+            setRefreshNonce(n => n + 1);
           }}
           className="p-2.5 rounded-full bg-inset hover:bg-inset2 text-ink2 border border-line/[0.08] transition-all"
           title={t("trends.refresh")}
+          aria-label={t("trends.refresh")}
         >
           <RefreshCw className={"w-4 h-4 " + (loading ? "animate-spin text-amber-700" : "")} />
         </button>
@@ -105,13 +119,14 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             </label>
             <select
               value={fromCurrency}
+              aria-label={t("trends.base")}
               onChange={(e) => {
                 StorageService.triggerHaptic();
                 setFromCurrency(e.target.value);
               }}
               className="w-full bg-inset border border-line/[0.08] rounded-[18px] px-3 py-2.5 text-xs font-bold text-ink focus:outline-none"
             >
-              {ALL_CURRENCIES.map((c) => (
+              {FIAT_CURRENCIES.map((c) => (
                 <option key={"chart-from-" + c.code} value={c.code}>
                   {c.flag} {c.code}
                 </option>
@@ -123,6 +138,7 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             onClick={handleSwap}
             className="mt-4 p-2.5 rounded-full bg-inset hover:bg-inset2 active:scale-90 text-amber-700 border border-line/[0.08] transition-all"
             title={t("trends.swap")}
+            aria-label={t("trends.swap")}
           >
             <ArrowRightLeft className="w-4 h-4" />
           </button>
@@ -133,13 +149,14 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
             </label>
             <select
               value={toCurrency}
+              aria-label={t("trends.target")}
               onChange={(e) => {
                 StorageService.triggerHaptic();
                 setToCurrency(e.target.value);
               }}
               className="w-full bg-inset border border-line/[0.08] rounded-[18px] px-3 py-2.5 text-xs font-bold text-ink focus:outline-none"
             >
-              {ALL_CURRENCIES.map((c) => (
+              {FIAT_CURRENCIES.map((c) => (
                 <option key={"chart-to-" + c.code} value={c.code}>
                   {c.flag} {c.code}
                 </option>
@@ -204,21 +221,21 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#323740" : "#E6E9EE"} vertical={false} />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   tick={{ fontSize: 9, fill: dark ? "#8E939E" : "#686C76" }}
                   tickFormatter={(val) => formatDate(val, { day: "2-digit", month: "2-digit" })}
                   axisLine={false}
                   tickLine={false}
                 />
-                <YAxis 
+                <YAxis
                   domain={["auto", "auto"]}
                   tick={{ fontSize: 9, fill: dark ? "#8E939E" : "#686C76" }}
                   tickFormatter={(val: number) => val.toLocaleString(locale, { maximumFractionDigits: val < 0.01 ? 4 : 2, minimumFractionDigits: val < 0.01 ? 4 : 2 })}
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip 
+                <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       const val = payload[0].value as number;
@@ -234,13 +251,13 @@ export const HistoricalChartsTab: React.FC<HistoricalChartsTabProps> = ({
                     return null;
                   }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="rate" 
-                  stroke={isPositive ? (dark ? "#34d399" : "#059669") : (dark ? "#fb7185" : "#E11D48")} 
+                <Area
+                  type="monotone"
+                  dataKey="rate"
+                  stroke={isPositive ? (dark ? "#34d399" : "#059669") : (dark ? "#fb7185" : "#E11D48")}
                   strokeWidth={2.5}
-                  fillOpacity={1} 
-                  fill="url(#colorRate)" 
+                  fillOpacity={1}
+                  fill="url(#colorRate)"
                 />
               </AreaChart>
             </ResponsiveContainer>

@@ -12,6 +12,7 @@ interface NavbarProps {
   isRefreshing: boolean;
   isOnline: boolean;
   lastUpdatedTime: Date | null;
+  rateDate?: string | null;
   isFallback?: boolean;
 }
 
@@ -23,14 +24,21 @@ export const Navbar: React.FC<NavbarProps> = ({
   isRefreshing,
   isOnline,
   lastUpdatedTime,
+  rateDate = null,
   isFallback = false
 }) => {
   const { t, locale, source } = useT();
   const currentSource = source(activeSourceId);
 
-  const formatLastUpdated = (date: Date | null) => {
-    if (!date) return t('nav.updating');
-    return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const formatRateLabel = () => {
+    if (rateDate && /^\d{4}-\d{2}-\d{2}$/.test(rateDate)) {
+      const d = new Date(rateDate + 'T12:00:00');
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+      }
+    }
+    if (!lastUpdatedTime) return t('nav.updating');
+    return lastUpdatedTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
   return (
@@ -50,7 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div className="flex items-center gap-1 text-[10px] text-muted font-mono mt-0.5 whitespace-nowrap min-w-0">
               <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="truncate">{currentSource.shortName} &bull; {formatLastUpdated(lastUpdatedTime)}</span>
+              <span className="truncate">{currentSource.shortName} &bull; {formatRateLabel()}</span>
             </div>
           </div>
         </div>
@@ -64,6 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 whitespace-nowrap rounded-full bg-card hover:bg-inset2 active:scale-95 text-ink2 border border-line/[0.08] text-xs font-bold transition-all shadow-sm"
             title={t('nav.sourcesTitle')}
+            aria-label={t('nav.sourcesTitle')}
           >
             <Globe className="w-3.5 h-3.5 text-accent" />
             <span>{t('nav.sources')}</span>
@@ -77,6 +86,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             disabled={isRefreshing}
             className="p-2 rounded-full bg-card hover:bg-inset2 active:scale-95 text-ink2 transition-all disabled:opacity-50 border border-line/[0.08]"
             title={t('nav.refresh')}
+            aria-label={t('nav.refresh')}
           >
             <RefreshCw className={'w-3.5 h-3.5 ' + (isRefreshing ? 'animate-spin text-accent' : '')} />
           </button>
@@ -88,6 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}
             className="p-2 rounded-full bg-card hover:bg-inset2 active:scale-95 text-ink2 transition-all border border-line/[0.08]"
             title={t('nav.settings')}
+            aria-label={t('nav.settings')}
           >
             <Settings className="w-3.5 h-3.5 text-ink2" />
           </button>

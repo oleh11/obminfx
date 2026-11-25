@@ -54,7 +54,7 @@ const BASELINE_RATES_USD: Record<string, number> = {
 
 // v2: v1 cache entries for card networks had the markup baked into the rates
 const STORAGE_KEY_PREFIX = 'currency_rates_v2_';
-const CACHE_TTL_MS = 30 * 60 * 1000;
+export const CACHE_TTL_MS = 30 * 60 * 1000;
 
 export const CUSTOM_SPREAD_STORAGE_KEY = 'custom_bank_spread_pct';
 export const DEFAULT_CUSTOM_SPREAD_PCT = 1.5;
@@ -160,9 +160,13 @@ export class RateService {
     return { ...data, rates: withoutExcludedRates(data.rates) };
   }
 
+  public static isStale(data: ExchangeRateData | null): boolean {
+    return !data || !!data.isFallback || Date.now() - data.timestamp >= CACHE_TTL_MS;
+  }
+
   private static async loadRates(sourceId: RateSourceId, forceRefresh: boolean): Promise<ExchangeRateData> {
     const cached = this.cachedData[sourceId];
-    if (!forceRefresh && cached) {
+    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       return cached;
     }
 

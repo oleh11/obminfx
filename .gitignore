@@ -44,4 +44,5 @@ android/capacitor.settings.gradle
 
 # Temporary render files
 *-render.html
-showcase-*.htmllocal.properties
+showcase-*.html
+local.properties

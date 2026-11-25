@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { 
-  Percent, ShieldCheck, ArrowRightLeft, 
-  Sparkles, DollarSign, Receipt, Info, CheckCircle2, ChevronRight, Landmark 
+import {
+  Percent, ArrowRightLeft, Receipt
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ExchangeRateData } from '../types/currency';
@@ -9,6 +8,7 @@ import { ALL_CURRENCIES, CARD_FEE_PRESETS } from '../data/currencies';
 import { useT } from '../i18n';
 import { RateService } from '../services/rateService';
 import { calculateBankFeeConversion, formatCurrencyAmount, formatRate } from '../services/feeCalculator';
+import { parseAmount } from '../services/cardCostEstimator';
 import { StorageService } from '../services/storageService';
 import { CardCostEstimator } from './CardCostEstimator';
 import { CardsPanel } from './CardsPanel';
@@ -25,26 +25,32 @@ interface BankFeeCalculatorTabProps {
   onBankFeeChange: (fee: number) => void;
   /** Text shared to the app (bank message): opens Check my card with it */
   sharedText?: { text: string; nonce: number } | null;
+  /** Mode requested by an Android launcher shortcut */
+  requestedMode?: { mode: 'simulate' | 'check' | 'atm'; nonce: number } | null;
 }
 
 export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
   rateData,
-  baseCurrency,
   targetCurrency,
   homeCurrency,
   bankFeePct,
   onBankFeeChange,
-  sharedText
+  sharedText,
+  requestedMode
 }) => {
-  const { t, locale, pct, currency } = useT();
+  const { t, lang, locale, pct, currency } = useT();
   const [transactionAmount, setTransactionAmount] = useState<string>('100');
   const [transactionCurrency, setTransactionCurrency] = useState<string>(targetCurrency || 'EUR');
   const [cardBillingCurrency, setCardBillingCurrency] = useState<string>(homeCurrency || 'USD');
-  const [mode, setMode] = useState<'simulate' | 'check' | 'atm'>(sharedText ? 'check' : 'simulate');
+  const [mode, setMode] = useState<'simulate' | 'check' | 'atm'>(
+    sharedText ? 'check' : (requestedMode?.mode ?? 'simulate')
+  );
   const [cards, setCardsState] = useState<SavedCard[]>(loadCards);
   const setCards = (next: SavedCard[]) => { setCardsState(next); storeCards(next); };
 
   useEffect(() => { if (sharedText) setMode('check'); }, [sharedText?.nonce]);
+  useEffect(() => { if (requestedMode) setMode(requestedMode.mode); }, [requestedMode?.nonce]);
+  useEffect(() => { if (homeCurrency) setCardBillingCurrency(homeCurrency); }, [homeCurrency]);
 
   // Currencies a bank message's card amount is likely in: saved cards first, then the user's own currencies
   const cardCurrencies = useMemo(
@@ -56,13 +62,14 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
     [rateData]
   );
 
-  const amountNum = parseFloat(transactionAmount) || 0;
+  const parsedAmount = parseAmount(transactionAmount, lang);
+  const amountNum = Number.isFinite(parsedAmount) ? parsedAmount : 0;
   const transMeta = currency(transactionCurrency);
   const billMeta = currency(cardBillingCurrency);
 
   const rawRate = rateData
     ? RateService.calculateRate(transactionCurrency, cardBillingCurrency, rateData)
-    : 1.0;
+    : NaN;
 
   const feeResult = calculateBankFeeConversion(
     amountNum,
@@ -79,10 +86,11 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
     setCardBillingCurrency(temp);
   };
 
-  const handlePresetSelect = (pct: number) => {
+  const handlePresetSelect = (fee: number) => {
     StorageService.triggerHaptic();
-    onBankFeeChange(pct);
-    if (pct === 0) {
+    onBankFeeChange(fee);
+    const reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (fee === 0 && !reducedMotion) {
       try {
         confetti({ particleCount: 40, spread: 55, origin: { y: 0.7 } });
       } catch {}
@@ -108,7 +116,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
         </div>
       </div>
 
-      {/* Mode switch: simulate a fee, or check what a real card payment cost */}
+      {/* Mode switch: simulate a fee, check card / terminal DCC, or ATM */}
       <div role="tablist" className="p-1 rounded-full bg-card/70 grid grid-cols-3 gap-1">
         {(['simulate', 'check', 'atm'] as const).map(m => (
           <button
@@ -135,6 +143,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
           knownCodes={knownCodes}
           onSaveCard={c => setCards(upsertCard(cards, c))}
           prefill={sharedText}
+          rateData={rateData}
         />
       ) : (<>
       {/* Inputs Bento Box */}
@@ -165,6 +174,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
             onClick={handleSwapCurrencies}
             className="mt-4 p-2.5 rounded-full bg-inset hover:bg-inset2 active:scale-90 text-accent border border-line/[0.08] transition-all"
             title={t('fee.swap')}
+            aria-label={t('fee.swap')}
           >
             <ArrowRightLeft className="w-4 h-4" />
           </button>
@@ -198,8 +208,9 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
           <div className="flex items-center bg-inset border border-line/[0.08] rounded-[22px] px-4 py-3 focus-within:ring-2 focus-within:ring-amber-500/40">
             <span className="text-accent font-bold text-xl mr-2">{transMeta.symbol}</span>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
+              autoComplete="off"
               value={transactionAmount}
               onChange={(e) => setTransactionAmount(e.target.value)}
               placeholder="100.00"
@@ -229,7 +240,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
               StorageService.triggerHaptic();
               onBankFeeChange(parseFloat(e.target.value));
             }}
-            className="w-full accent-black h-2 bg-inset rounded-lg cursor-pointer"
+            className="w-full accent-black dark:accent-white h-2 bg-inset rounded-lg cursor-pointer"
           />
 
           {/* Preset Pills */}

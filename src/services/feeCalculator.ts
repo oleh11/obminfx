@@ -1,4 +1,5 @@
 import { FeeCalculationResult } from '../types/currency';
+import { parseAmount } from './cardCostEstimator';
 
 /**
  * Calculates foreign transaction conversions including Bank / Financial Institution Processing Fees
@@ -89,29 +90,104 @@ export function formatRate(rate: number, locale?: string): string {
 }
 
 /**
- * Safely evaluates arithmetic expressions (e.g. "120 + 45.5 * 2") entered in the calculator
+ * Returns true when an entered value contains an arithmetic operator or parentheses beyond a leading sign.
  */
-export function evaluateMathExpression(expression: string): number | null {
-  if (!expression || expression.trim() === '') return 0;
-  
-  try {
-    // Sanitize to only allowed calculator characters
-    const cleanExpr = expression
-      .replace(/×/g, '*')
-      .replace(/÷/g, '/')
-      .replace(/,/g, '')
-      .replace(/[^0-9+\-*/.()]/g, '');
-    
-    if (!cleanExpr) return null;
-    
-    // Avoid dangerous eval by using Function constructor with limited scope
-    // eslint-disable-next-line no-new-func
-    const result = new Function(`'use strict'; return (${cleanExpr})`)();
-    if (typeof result === 'number' && isFinite(result)) {
-      return result;
+export function hasMathOperator(expression: string): boolean {
+  const trimmed = expression.trim().replace(/^[+-−–]/, '');
+  return /[+\-−–*×/÷()]/.test(trimmed);
+}
+
+type MathToken = { kind: 'num'; value: number } | { kind: 'op'; op: string };
+
+function tokenizeMath(expression: string, lang: string): MathToken[] | null {
+  const normalized = expression.replace(/×/g, '*').replace(/÷/g, '/').replace(/[−–]/g, '-');
+  const tokens: MathToken[] = [];
+  let i = 0;
+
+  while (i < normalized.length) {
+    const ch = normalized[i];
+    if (/[\s\u00A0\u202F]/.test(ch)) {
+      i++;
+      continue;
+    }
+    if ('+-*/()'.includes(ch)) {
+      tokens.push({ kind: 'op', op: ch });
+      i++;
+      continue;
+    }
+    if (/[0-9.,]/.test(ch)) {
+      const rest = normalized.slice(i);
+      const match = /^(?:\d{1,3}(?:[ \u00A0\u202F']\d{3})+(?:[.,]\d*)?|[\d.,]+)/.exec(rest);
+      if (!match) return null;
+      const value = parseAmount(match[0], lang);
+      if (!Number.isFinite(value)) return null;
+      tokens.push({ kind: 'num', value });
+      i += match[0].length;
+      continue;
     }
     return null;
-  } catch (e) {
-    return null;
   }
+  return tokens;
+}
+
+/**
+ * Safely evaluates arithmetic expressions (e.g. "120 + 45.5 * 2" or "1 200,50 × 2") without eval/Function.
+ */
+export function evaluateMathExpression(expression: string, lang: string = 'en'): number | null {
+  if (!expression || expression.trim() === '') return 0;
+
+  const tokens = tokenizeMath(expression, lang);
+  if (!tokens || tokens.length === 0) return null;
+
+  let pos = 0;
+  const peek = () => tokens[pos];
+  const consume = () => tokens[pos++];
+
+  const parseExpr = (): number => {
+    let left = parseTerm();
+    while (peek()?.kind === 'op' && (peek() as { kind: 'op'; op: string }).op.match(/^[+-]$/)) {
+      const op = (consume() as { kind: 'op'; op: string }).op;
+      const right = parseTerm();
+      left = op === '+' ? left + right : left - right;
+    }
+    return left;
+  };
+
+  const parseTerm = (): number => {
+    let left = parseFactor();
+    while (peek()?.kind === 'op' && (peek() as { kind: 'op'; op: string }).op.match(/^[*/]$/)) {
+      const op = (consume() as { kind: 'op'; op: string }).op;
+      const right = parseFactor();
+      if (op === '*') left *= right;
+      else left = right === 0 ? NaN : left / right;
+    }
+    return left;
+  };
+
+  const parseFactor = (): number => {
+    const tok = peek();
+    if (!tok) return NaN;
+    if (tok.kind === 'op' && (tok.op === '+' || tok.op === '-')) {
+      consume();
+      const v = parseFactor();
+      return tok.op === '-' ? -v : v;
+    }
+    if (tok.kind === 'op' && tok.op === '(') {
+      consume();
+      const v = parseExpr();
+      const close = peek();
+      if (!close || close.kind !== 'op' || close.op !== ')') return NaN;
+      consume();
+      return v;
+    }
+    if (tok.kind === 'num') {
+      consume();
+      return tok.value;
+    }
+    return NaN;
+  };
+
+  const result = parseExpr();
+  if (pos !== tokens.length || !Number.isFinite(result)) return null;
+  return result;
 }

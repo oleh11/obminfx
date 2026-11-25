@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { 
-  Globe, ShieldCheck, CreditCard, Sparkles, Building2, 
-  Check, RefreshCw, Layers, Sliders, ExternalLink, ArrowRightLeft, Info 
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Globe, ShieldCheck, CreditCard, Building2,
+  RefreshCw, Layers, Sliders
 } from 'lucide-react';
-import { RateSourceId, RateSource, ExchangeRateData } from '../types/currency';
+import { RateSourceId, ExchangeRateData } from '../types/currency';
 import { AVAILABLE_SOURCES, ALL_CURRENCIES } from '../data/currencies';
 import { useT } from '../i18n';
 import { RateService, CUSTOM_SPREAD_STORAGE_KEY, DEFAULT_CUSTOM_SPREAD_PCT } from '../services/rateService';
 import { StorageService } from '../services/storageService';
-import { formatCurrencyAmount, formatRate } from '../services/feeCalculator';
+import { formatRate } from '../services/feeCalculator';
 
 interface SourcesTabProps {
   activeSourceId: RateSourceId;
@@ -19,6 +19,8 @@ interface SourcesTabProps {
   isRefreshing: boolean;
   rateData: ExchangeRateData | null;
 }
+
+type FeedKey = 'ecb' | 'nbu' | 'open_market';
 
 export const SourcesTab: React.FC<SourcesTabProps> = ({
   activeSourceId,
@@ -35,10 +37,47 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
   );
   const [compareBase, setCompareBase] = useState<string>(baseCurrency || 'USD');
   const [compareTarget, setCompareTarget] = useState<string>(targetCurrency || 'UAH');
+  const [sourceRates, setSourceRates] = useState<Partial<Record<FeedKey, ExchangeRateData>>>({});
+  const [loadingFeeds, setLoadingFeeds] = useState<boolean>(false);
+
+  useEffect(() => {
+    setCompareBase(baseCurrency || 'USD');
+  }, [baseCurrency]);
+
+  const fetchComparisonFeeds = useCallback(async (force: boolean = false) => {
+    setLoadingFeeds(true);
+    const feeds: FeedKey[] = ['ecb', 'nbu', 'open_market'];
+    const results = await Promise.allSettled(feeds.map(f => RateService.getRates(f, force)));
+    const next: Partial<Record<FeedKey, ExchangeRateData>> = {};
+    feeds.forEach((f, idx) => {
+      const r = results[idx];
+      if (r.status === 'fulfilled') next[f] = r.value;
+    });
+    setSourceRates(next);
+    setLoadingFeeds(false);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoadingFeeds(true);
+      const feeds: FeedKey[] = ['ecb', 'nbu', 'open_market'];
+      const results = await Promise.allSettled(feeds.map(f => RateService.getRates(f, false)));
+      if (!active) return;
+      const next: Partial<Record<FeedKey, ExchangeRateData>> = {};
+      feeds.forEach((f, idx) => {
+        const r = results[idx];
+        if (r.status === 'fulfilled') next[f] = r.value;
+      });
+      setSourceRates(next);
+      setLoadingFeeds(false);
+    })();
+    return () => { active = false; };
+  }, []);
 
   const handleCustomSpreadChange = (val: string) => {
     setCustomSpread(val);
-    localStorage.setItem(CUSTOM_SPREAD_STORAGE_KEY, val);
+    try { localStorage.setItem(CUSTOM_SPREAD_STORAGE_KEY, val); } catch {}
   };
 
   const getSourceIcon = (id: RateSourceId) => {
@@ -58,12 +97,16 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
     }
   };
 
-  const baseMeta = currency(compareBase);
   const targetMeta = currency(compareTarget);
+  const formatDateShort = (dateStr?: string) => {
+    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null;
+    const d = new Date(dateStr + 'T12:00:00');
+    return isNaN(d.getTime()) ? null : d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  };
 
   return (
     <div className="space-y-4 w-full pb-8">
-      {/* Header Banner - Warm Charcoal & Gold */}
+      {/* Header Banner */}
       <div className="p-5 rounded-[24px] bg-card border border-line/[0.08] shadow-sm flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-[20px] bg-accent/[0.06] border border-accent/[0.18] flex items-center justify-center text-accent">
@@ -82,12 +125,14 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           onClick={() => {
             StorageService.triggerHaptic();
             onRefreshAll();
+            fetchComparisonFeeds(true);
           }}
-          disabled={isRefreshing}
+          disabled={isRefreshing || loadingFeeds}
           className="p-2.5 rounded-full bg-inset hover:bg-inset2 text-ink2 border border-line/[0.08] transition-all disabled:opacity-50"
           title={t('src.refreshAll')}
+          aria-label={t('src.refreshAll')}
         >
-          <RefreshCw className={'w-4 h-4 ' + (isRefreshing ? 'animate-spin text-accent' : '')} />
+          <RefreshCw className={'w-4 h-4 ' + (isRefreshing || loadingFeeds ? 'animate-spin text-accent' : '')} />
         </button>
       </div>
 
@@ -105,6 +150,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
         <div className="grid grid-cols-2 gap-2 text-xs">
           <select
             value={compareBase}
+            aria-label={t('trends.base')}
             onChange={(e) => setCompareBase(e.target.value)}
             className="bg-inset border border-line/[0.08] rounded-[18px] px-3 py-2.5 font-bold text-ink focus:outline-none focus:ring-1 focus:ring-accent/20"
           >
@@ -116,6 +162,7 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           </select>
           <select
             value={compareTarget}
+            aria-label={t('trends.target')}
             onChange={(e) => setCompareTarget(e.target.value)}
             className="bg-inset border border-line/[0.08] rounded-[18px] px-3 py-2.5 font-bold text-ink focus:outline-none focus:ring-1 focus:ring-accent/20"
           >
@@ -132,14 +179,17 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
           {AVAILABLE_SOURCES.map((source) => {
             const isSelected = source.id === activeSourceId;
             const info = sourceInfo(source.id);
-            const midRate = rateData
-              ? RateService.calculateRate(compareBase, compareTarget, rateData, false)
+            const feedKey: FeedKey = source.id === 'ecb' ? 'ecb' : source.id === 'nbu' ? 'nbu' : 'open_market';
+            const feed = sourceRates[feedKey] || (rateData?.source === source.id ? rateData : null);
+            const midRate = feed
+              ? RateService.calculateRate(compareBase, compareTarget, feed, false)
               : NaN;
             const parsedSpread = parseFloat(customSpread);
             const markupPct = source.id === 'custom_bank'
               ? (isFinite(parsedSpread) && parsedSpread >= 0 ? parsedSpread : DEFAULT_CUSTOM_SPREAD_PCT)
               : RateService.getMarkupPct(source.id);
             const rate = midRate * (1 + markupPct / 100);
+            const asOf = formatDateShort(feed?.date);
 
             return (
               <div
@@ -169,10 +219,10 @@ export const SourcesTab: React.FC<SourcesTabProps> = ({
 
                 <div className="text-right font-mono">
                   <div className="font-black text-sm text-ink">
-                    {formatRate(rate, locale)} {targetMeta.symbol}
+                    {!feed && loadingFeeds ? t('src.loading') : `${formatRate(rate, locale)} ${targetMeta.symbol}`}
                   </div>
                   <div className="text-[10px] text-muted">
-                    {info.updateFrequency}
+                    {asOf ? t('src.asOf', { date: asOf }) : info.updateFrequency}
                   </div>
                 </div>
               </div>

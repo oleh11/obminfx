@@ -1,12 +1,19 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  ArrowRightLeft, Plus, Trash2, Check, Copy, 
-  TrendingUp, Percent, Star, Sparkles, ChevronRight, ChevronDown, Clock, ShieldCheck, ScanLine
+import {
+  ArrowRightLeft, Plus, Trash2, Check, Copy,
+  TrendingUp, Percent, Star, ChevronRight, ChevronDown, Clock, ShieldCheck, ScanLine, X
 } from 'lucide-react';
 import { ExchangeRateData } from '../types/currency';
 import { useT } from '../i18n';
 import { RateService } from '../services/rateService';
-import { formatCurrencyAmount, calculateBankFeeConversion, formatRate } from '../services/feeCalculator';
+import {
+  formatCurrencyAmount,
+  calculateBankFeeConversion,
+  formatRate,
+  evaluateMathExpression,
+  hasMathOperator
+} from '../services/feeCalculator';
+import { parseAmount } from '../services/cardCostEstimator';
 import { StorageService } from '../services/storageService';
 import { orderConverterCurrencies } from '../services/converterOrder';
 
@@ -32,6 +39,20 @@ interface ConverterTabProps {
   lastUpdatedTime: Date | null;
 }
 
+function copyFallback(text: string): void {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+  } catch {}
+  document.body.removeChild(ta);
+}
+
 export const ConverterTab: React.FC<ConverterTabProps> = ({
   onOpenScanner,
   baseCurrency,
@@ -44,7 +65,6 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
   onToggleFavorite,
   onOpenAddModal,
   onOpenSelectBaseModal,
-  onOpenSourceModal,
   rateData,
   bankFeePct,
   onBankFeeChange,
@@ -52,12 +72,17 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
   onNavigateToTrends,
   lastUpdatedTime
 }) => {
-  const { t, locale, pct, currency } = useT();
+  const { t, lang, locale, pct, currency } = useT();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [showFeeBar, setShowFeeBar] = useState<boolean>(false);
 
   const baseMeta = currency(baseCurrency);
-  const numericAmount = parseFloat(baseAmount) || 0;
+  const evaluated = evaluateMathExpression(baseAmount, lang);
+  const isExpr = hasMathOperator(baseAmount);
+  const parsedFallback = parseAmount(baseAmount, lang);
+  const numericAmount = evaluated !== null
+    ? evaluated
+    : (Number.isFinite(parsedFallback) ? parsedFallback : 0);
 
   // Sort pinned currencies: Favorites first, then Alphabetical A-Z
   const sortedCurrencies = useMemo(
@@ -68,10 +93,37 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
   // Copies a plain number (e.g. 1234.56) so it pastes cleanly into other apps
   const handleCopyAmount = (code: string, plainAmount: string) => {
     StorageService.triggerHaptic();
-    navigator.clipboard.writeText(plainAmount);
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(plainAmount).catch(() => copyFallback(plainAmount));
+    } else {
+      copyFallback(plainAmount);
+    }
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
   };
+
+  const appendOperator = (op: string) => {
+    StorageService.triggerHaptic();
+    const trimmed = baseAmount.trim();
+    if (!trimmed) return;
+    const withoutTrailingOp = trimmed.replace(/[+\-−–*×/÷\s]+$/, '');
+    if (!withoutTrailingOp) return;
+    onAmountChange(`${withoutTrailingOp} ${op} `);
+  };
+
+  const applyEvaluated = () => {
+    if (!isExpr || evaluated === null || !Number.isFinite(evaluated)) return;
+    StorageService.triggerHaptic();
+    const rounded = Math.round(evaluated * 1e6) / 1e6;
+    const text = lang === 'en' ? String(rounded) : String(rounded).replace('.', ',');
+    onAmountChange(text);
+  };
+
+  const formattedRateDate = useMemo(() => {
+    if (!rateData?.date || !/^\d{4}-\d{2}-\d{2}$/.test(rateData.date)) return null;
+    const d = new Date(rateData.date + 'T12:00:00');
+    return isNaN(d.getTime()) ? null : d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  }, [rateData?.date, locale]);
 
   return (
     <div className="space-y-4 w-full pb-8">
@@ -92,7 +144,11 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
           </div>
 
           <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-inset text-ink2 border border-line/[0.08]">
-            {lastUpdatedTime ? lastUpdatedTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : t('conv.live')}
+            {formattedRateDate
+              ? t('conv.rateDate', { date: formattedRateDate })
+              : lastUpdatedTime
+              ? lastUpdatedTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+              : t('conv.live')}
           </span>
         </div>
 
@@ -132,28 +188,74 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
           </button>
         </div>
 
-        {/* Number Input Display */}
+        {/* Number & Math Expression Input Display */}
         <div className="my-2">
-          <div className="flex items-baseline justify-end gap-2 bg-card/90 border border-line/[0.08] rounded-[24px] px-5 py-4 focus-within:ring-2 focus-within:ring-accent/20 transition-all">
-            <span className="text-accent font-black text-2xl select-none">
+          <div className="flex items-center justify-end gap-2 bg-card/90 border border-line/[0.08] rounded-[24px] px-4 py-3.5 focus-within:ring-2 focus-within:ring-accent/20 transition-all">
+            {baseAmount !== '' && (
+              <button
+                type="button"
+                onClick={() => {
+                  StorageService.triggerHaptic();
+                  onAmountChange('');
+                }}
+                aria-label={t('conv.clear')}
+                title={t('conv.clear')}
+                className="p-1.5 rounded-full text-muted hover:text-ink hover:bg-inset2 transition-colors shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            <span className="text-accent font-black text-2xl select-none shrink-0">
               {baseMeta.symbol}
             </span>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="any"
+              autoComplete="off"
               value={baseAmount}
               onChange={(e) => onAmountChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && isExpr && evaluated !== null) {
+                  e.preventDefault();
+                  applyEvaluated();
+                }
+              }}
               placeholder="0.00"
-              className="w-full bg-transparent text-right font-mono font-black text-4xl text-ink placeholder-muted focus:outline-none tracking-tight"
+              className="w-full min-w-0 bg-transparent text-right font-mono font-black text-3xl sm:text-4xl text-ink placeholder-muted focus:outline-none tracking-tight"
             />
           </div>
-          <div className="flex items-center justify-between text-xs text-muted font-medium mt-2 px-2">
+
+          {/* Inline Math Operator Strip + Evaluated Preview */}
+          <div className="mt-2 flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-1">
+              {['+', '−', '×', '÷'].map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => appendOperator(op)}
+                  className="w-8 h-7 rounded-full bg-inset hover:bg-inset2 border border-line/[0.08] text-xs font-black text-ink2 active:scale-95 transition-all"
+                >
+                  {op}
+                </button>
+              ))}
+              {isExpr && evaluated !== null && (
+                <button
+                  type="button"
+                  onClick={applyEvaluated}
+                  className="px-2.5 h-7 rounded-full bg-accent text-onaccent text-xs font-black active:scale-95 transition-all"
+                >
+                  = {formatCurrencyAmount(numericAmount, baseMeta.decimalPlaces, false, '', locale)}
+                </button>
+              )}
+            </div>
+            <span className="text-xs text-muted font-medium truncate">{baseMeta.name}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-muted font-medium mt-1.5 px-2">
             <span className="flex items-center gap-1 text-[11px] text-muted font-mono">
               <Clock className="w-3 h-3 text-accent" />
               {lastUpdatedTime ? t('conv.liveAt', { time: lastUpdatedTime.toLocaleTimeString(locale) }) : t('conv.connecting')}
             </span>
-            <span>{baseMeta.name}</span>
           </div>
         </div>
 
@@ -172,7 +274,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            
+
             <div className="grid grid-cols-4 gap-2">
               {[0, 1.0, 2.0, 3.0].map((fee) => {
                 const isSelected = Math.abs(bankFeePct - fee) < 0.05;
@@ -236,20 +338,22 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
       <div className="space-y-3">
         {sortedCurrencies.map((code) => {
           const meta = currency(code);
-          const rawRate = rateData ? RateService.calculateRate(baseCurrency, code, rateData) : 1.0;
+          const rawRate = rateData ? RateService.calculateRate(baseCurrency, code, rateData) : NaN;
           const isFavorite = favoriteCurrencies.includes(code);
 
-          const feeCalc = calculateBankFeeConversion(
-            numericAmount,
-            baseCurrency,
-            code,
-            rawRate,
-            bankFeePct
-          );
+          const feeCalc = rateData
+            ? calculateBankFeeConversion(numericAmount, baseCurrency, code, rawRate, bankFeePct)
+            : null;
 
-          const formattedTotal = formatCurrencyAmount(feeCalc.totalBilledAmount, meta.decimalPlaces, false, '', locale);
-          const plainTotal = formatCurrencyAmount(feeCalc.totalBilledAmount, meta.decimalPlaces).replace(/,/g, '');
-          const formattedFee = formatCurrencyAmount(feeCalc.bankFeeAmount, meta.decimalPlaces, false, '', locale);
+          const formattedTotal = feeCalc
+            ? formatCurrencyAmount(feeCalc.totalBilledAmount, meta.decimalPlaces, false, '', locale)
+            : '—';
+          const plainTotal = feeCalc
+            ? formatCurrencyAmount(feeCalc.totalBilledAmount, meta.decimalPlaces).replace(/,/g, '')
+            : '';
+          const formattedFee = feeCalc
+            ? formatCurrencyAmount(feeCalc.bankFeeAmount, meta.decimalPlaces, false, '', locale)
+            : '—';
           const isCopied = copiedCode === code;
 
           return (
@@ -259,7 +363,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
             >
               {/* Card Header */}
               <div className="flex items-start justify-between">
-                <div 
+                <div
                   className="flex items-center gap-3.5 cursor-pointer group"
                   onClick={() => {
                     StorageService.triggerHaptic();
@@ -293,6 +397,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                     }}
                     className="p-2 rounded-full text-muted hover:text-accent hover:bg-accent/[0.04] transition-colors"
                     title={t('conv.setBaseTitle', { code })}
+                    aria-label={t('conv.setBaseTitle', { code })}
                   >
                     <ArrowRightLeft className="w-4 h-4" />
                   </button>
@@ -304,6 +409,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                     }}
                     className={'p-2 rounded-full transition-colors ' + (isFavorite ? 'text-accent hover:bg-accent/[0.06]' : 'text-muted/70 hover:text-accent hover:bg-accent/[0.04]')}
                     title={isFavorite ? t('common.removeFav') : t('common.addFav')}
+                    aria-label={isFavorite ? t('common.removeFav') : t('common.addFav')}
                   >
                     <Star className={'w-4 h-4 ' + (isFavorite ? 'fill-accent' : '')} />
                   </button>
@@ -315,6 +421,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                     }}
                     className="p-2 rounded-full text-muted hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
                     title={t('conv.remove')}
+                    aria-label={t('conv.remove')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -323,32 +430,46 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
 
               {/* Amount display */}
               <div className="my-3 text-right">
-                <div className="flex items-baseline justify-end gap-1.5">
-                  <span className="font-mono font-black text-3xl text-ink tracking-tight">
-                    {formattedTotal}
-                  </span>
-                  <span className="text-base font-extrabold text-accent">
-                    {meta.symbol}
-                  </span>
-                </div>
+                {!rateData ? (
+                  <div className="flex flex-col items-end gap-2 py-1" aria-hidden="true">
+                    <div className="h-8 w-36 rounded-xl bg-inset animate-pulse" />
+                    {bankFeePct > 0 && <div className="h-3.5 w-44 rounded-lg bg-inset animate-pulse" />}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-baseline justify-end gap-1.5">
+                      <span className="font-mono font-black text-3xl text-ink tracking-tight">
+                        {formattedTotal}
+                      </span>
+                      <span className="text-base font-extrabold text-accent">
+                        {meta.symbol}
+                      </span>
+                    </div>
 
-                {bankFeePct > 0 && (
-                  <p className="text-xs font-bold text-accent mt-1">
-                    {t('conv.includesFee', { fee: formattedFee, symbol: meta.symbol, pct: pct(bankFeePct) })}
-                  </p>
+                    {bankFeePct > 0 && isFinite(rawRate) && (
+                      <p className="text-xs font-bold text-accent mt-1">
+                        {t('conv.includesFee', { fee: formattedFee, symbol: meta.symbol, pct: pct(bankFeePct) })}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
               {/* Footer: Live Rate + Action Buttons */}
               <div className="pt-3.5 border-t border-line/[0.08] flex items-center justify-between text-xs">
-                <span className="font-mono text-muted text-[11px]">
-                  1 {baseMeta.code} = {formatRate(rawRate, locale)} {meta.code}
-                </span>
+                {!rateData ? (
+                  <div className="h-3.5 w-32 rounded bg-inset animate-pulse" aria-hidden="true" />
+                ) : (
+                  <span className="font-mono text-muted text-[11px]">
+                    1 {baseMeta.code} = {formatRate(rawRate, locale)} {meta.code}
+                  </span>
+                )}
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCopyAmount(code, plainTotal)}
-                    className={'flex items-center gap-1 px-3 py-1.5 rounded-[14px] font-bold text-xs transition-all ' + (isCopied ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' : 'bg-card hover:bg-inset2 text-ink2 border border-line/[0.08]')}
+                    disabled={!rateData || !isFinite(rawRate)}
+                    className={'flex items-center gap-1 px-3 py-1.5 rounded-[14px] font-bold text-xs transition-all disabled:opacity-40 ' + (isCopied ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' : 'bg-card hover:bg-inset2 text-ink2 border border-line/[0.08]')}
                   >
                     {isCopied ? (
                       <>
@@ -370,6 +491,7 @@ export const ConverterTab: React.FC<ConverterTabProps> = ({
                     }}
                     className="p-2 rounded-[14px] bg-card hover:bg-inset2 text-ink2 border border-line/[0.08] transition-colors"
                     title={t('conv.trendTitle')}
+                    aria-label={t('conv.trendTitle')}
                   >
                     <TrendingUp className="w-3.5 h-3.5 text-accent" />
                   </button>

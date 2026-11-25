@@ -1,21 +1,27 @@
 // Framework-free i18n helpers (used by the React provider and by tests).
 import { en, Dict, TKey } from './en';
 import { uk } from './uk';
+import { pl } from './pl';
+import { de } from './de';
 import { CURRENCY_NAMES } from '../data/currencyNames';
 import type { Currency, RateSourceId } from '../types/currency';
 
-export type Lang = 'en' | 'uk';
+export type Lang = 'en' | 'uk' | 'pl' | 'de';
 export type TParams = Record<string, string | number>;
 
-export const LANGS: Lang[] = ['en', 'uk'];
-export const DICTIONARIES: Record<Lang, Dict> = { en, uk };
+export const LANGS: Lang[] = ['en', 'uk', 'pl', 'de'];
+export const DICTIONARIES: Record<Lang, Dict> = { en, uk, pl, de };
 /** BCP 47 locale used for number/date formatting. */
-export const LOCALES: Record<Lang, string> = { en: 'en-US', uk: 'uk-UA' };
+export const LOCALES: Record<Lang, string> = { en: 'en-US', uk: 'uk-UA', pl: 'pl-PL', de: 'de-DE' };
 export const LANG_STORAGE_KEY = 'app_language_v1';
 
-/** Ukrainian if the device language is Ukrainian, otherwise English. */
+/** Maps device locale to Ukrainian, Polish, German, or English. */
 export function detectLang(deviceLanguage?: string | null): Lang {
-  return deviceLanguage && deviceLanguage.toLowerCase().startsWith('uk') ? 'uk' : 'en';
+  const code = (deviceLanguage || '').toLowerCase();
+  if (code.startsWith('uk')) return 'uk';
+  if (code.startsWith('pl')) return 'pl';
+  if (code.startsWith('de')) return 'de';
+  return 'en';
 }
 
 export function translate(lang: Lang, key: TKey, params?: TParams): string {

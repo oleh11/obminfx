@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="share_check_card">Перевірити комісію картки</string>
+    <string name="shortcut_scan_short">Сканувати ціни</string>
+    <string name="shortcut_scan_long">Сканувати цінники камерою</string>
+    <string name="shortcut_check_short">Перевірити картку</string>
+    <string name="shortcut_check_long">Перевірити реальну комісію картки</string>
 </resources>

@@ -1,5 +1,11 @@
-import { calculateBankFeeConversion, evaluateMathExpression, formatCurrencyAmount, formatRate } from '../services/feeCalculator';
-import { RateService, parseNBURates } from '../services/rateService';
+import {
+  calculateBankFeeConversion,
+  evaluateMathExpression,
+  hasMathOperator,
+  formatCurrencyAmount,
+  formatRate
+} from '../services/feeCalculator';
+import { RateService, parseNBURates, CACHE_TTL_MS } from '../services/rateService';
 import { ExchangeRateData, RateSourceId } from '../types/currency';
 
 const rateData = (source: RateSourceId, rates: Record<string, number>): ExchangeRateData => ({
@@ -47,7 +53,18 @@ function runTests() {
   assert(evaluateMathExpression('25 × 4') === 100, 'Arithmetic 25 × 4 = 100');
   assert(evaluateMathExpression('150 ÷ 3') === 50, 'Arithmetic 150 ÷ 3 = 50');
   assert(evaluateMathExpression('(50 + 25) * 2') === 150, 'Arithmetic (50 + 25) * 2 = 150');
-  assert(evaluateMathExpression('invalid_text') === 0 || evaluateMathExpression('invalid_text') === null, 'Safe fallback on invalid math');
+  assert(evaluateMathExpression('125,50 + 24,50', 'uk') === 150, 'Comma decimal arithmetic (uk)');
+  assert(evaluateMathExpression('1 200,50 * 2', 'uk') === 2401, 'Space thousands + comma decimal arithmetic');
+  assert(evaluateMathExpression('100 − 25') === 75, 'Unicode minus arithmetic');
+  assert(evaluateMathExpression('10 / 0') === null, 'Division by zero returns null');
+  assert(evaluateMathExpression('invalid_text') === null, 'Safe fallback on invalid math');
+  assert(hasMathOperator('100 + 50') && hasMathOperator('25 × 4') && !hasMathOperator('125,50') && !hasMathOperator('-50'), 'hasMathOperator detects infix expressions only');
+
+  // 4b. RateService staleness helper
+  assert(RateService.isStale(null) === true, 'Null rateData is stale');
+  assert(RateService.isStale({ ...rateData('ecb', { USD: 1 }), timestamp: Date.now(), isFallback: true }) === true, 'Fallback rateData is stale');
+  assert(RateService.isStale({ ...rateData('ecb', { USD: 1 }), timestamp: Date.now() - CACHE_TTL_MS - 1000 }) === true, 'Expired rateData is stale');
+  assert(RateService.isStale({ ...rateData('ecb', { USD: 1 }), timestamp: Date.now() - 1000 }) === false, 'Fresh rateData is not stale');
 
   // 5. Test Formatting
   assert(formatCurrencyAmount(1234.56, 2) === '1,234.56', 'Localized thousand separator format');

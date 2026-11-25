@@ -4,14 +4,42 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-/** Opens the Android share sheet and outside links (Play Store, GitHub) for the web app. */
+/** Opens the Android share sheet, outside links, and tracks open JS overlays for system back handling. */
 @CapacitorPlugin(name = "AppActions")
 public class AppActionsPlugin extends Plugin {
+
+    private static AppActionsPlugin instance;
+    private static volatile boolean overlayOpen = false;
+
+    @Override
+    public void load() {
+        instance = this;
+        MainActivity.updateBackCallback(overlayOpen);
+    }
+
+    /** Tells native Android whether an in-app modal or scanner is currently open */
+    @PluginMethod
+    public void setOverlayOpen(PluginCall call) {
+        overlayOpen = Boolean.TRUE.equals(call.getBoolean("open", false));
+        MainActivity.updateBackCallback(overlayOpen);
+        call.resolve();
+    }
+
+    static boolean isOverlayOpen() {
+        return overlayOpen;
+    }
+
+    static void emitBackPress() {
+        if (instance != null && instance.hasListeners("backPress")) {
+            instance.notifyListeners("backPress", new JSObject());
+        }
+    }
 
     /** Shows the share sheet with plain text */
     @PluginMethod

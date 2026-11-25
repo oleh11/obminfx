@@ -84,6 +84,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
               StorageService.triggerHaptic();
               onClose();
             }}
+            aria-label={t('common.close')}
             className="p-2 rounded-full bg-card hover:bg-inset2 text-muted hover:text-ink transition-colors"
           >
             <X className="w-5 h-5" />
@@ -129,6 +130,7 @@ export const SelectBaseCurrencyModal: React.FC<SelectBaseCurrencyModalProps> = (
                 onClick={() => setSearch('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-muted hover:text-ink"
                 title={t('search.clear')}
+                aria-label={t('search.clear')}
               >
                 <X className="w-3.5 h-3.5" />
               </button>

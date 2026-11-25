@@ -2,9 +2,12 @@ import { parseBankMessage } from '../services/bankMessage';
 import { parseNBUHistory, sampleDays } from '../services/rateService';
 import { ALL_CURRENCIES } from '../data/currencies';
 import { upsertCard, removeCard, rankCards } from '../services/cardsService';
-import { orderConverterCurrencies, pairCurrency } from '../services/converterOrder';
+import { orderConverterCurrencies, pairCurrency, scannerCurrencyOptions, defaultScannerCurrency } from '../services/converterOrder';
 import { parsePriceText, findPrices, detectCurrency, mergePrices } from '../services/priceScan';
-import { withdrawalCost, addWithdrawal, removeWithdrawal, monthTotals } from '../services/atmWithdrawals';
+import {
+  withdrawalCost, addWithdrawal, removeWithdrawal, updateWithdrawal,
+  toggleWithdrawalRefunded, monthTotals, formatMonthSummaryText
+} from '../services/atmWithdrawals';
 
 let passed = 0;
 let total = 0;
@@ -119,6 +122,57 @@ assert(detectCurrency([{ words: [word('Milk'), word('€')] }]) === null, 'A sig
 const merged = mergePrices([{ amount: 12.99, text: '12,99', bbox: { x0: 0, y0: 0, x1: 100, y1: 40 } }],
   [{ amount: 12.99, text: '12.99', bbox: { x0: 4, y0: 2, x1: 98, y1: 38 } }, { amount: 3.49, text: '3.49', bbox: { x0: 0, y0: 100, x1: 40, y1: 120 } }]);
 assert(merged.length === 2, 'Two reads of the same frame list each price once', show(merged));
+
+// Scanner currency list when homeCurrency != baseCurrency
+const scanOpts = scannerCurrencyOptions(['USD', 'EUR', 'UAH'], ['UAH', 'EUR'], 'PLN', 'UAH', ['USD', 'EUR', 'PLN', 'UAH', 'CZK']);
+assert(
+  scanOpts[0] === 'PLN' && !scanOpts.includes('UAH') && scanOpts.includes('CZK'),
+  'Scanner keeps baseCurrency (PLN) and excludes homeCurrency (UAH)',
+  show(scanOpts)
+);
+assert(
+  defaultScannerCurrency(['USD', 'EUR', 'UAH'], ['UAH'], 'PLN', 'UAH') === 'PLN',
+  'Scanner defaults to traveling baseCurrency when base != home'
+);
+assert(
+  defaultScannerCurrency(['USD', 'EUR', 'UAH'], ['EUR'], 'UAH', 'UAH') === 'EUR',
+  'Scanner defaults to top pair currency when base == home'
+);
+
+// ATM withdrawal log: edit, refunded toggle, pending/refunded totals, summary text
+let atmList = addWithdrawal([], {
+  date: '2026-11-10', currency: 'EUR', amount: 100, atmFee: 5, homeCurrency: 'USD', rate: 1.1, cardFeePct: 0
+}, 1000);
+atmList = addWithdrawal(atmList, {
+  date: '2026-11-12', currency: 'EUR', amount: 200, atmFee: 4, homeCurrency: 'USD', rate: 1.1, cardFeePct: 0
+}, 2000);
+assert(atmList.length === 2 && atmList[0].date === '2026-11-12', 'ATM withdrawals sorted newest first');
+const toggled = toggleWithdrawalRefunded(atmList, atmList[0].id);
+const totalsAfterToggle = monthTotals(toggled);
+assert(
+  totalsAfterToggle.length === 1 &&
+  totalsAfterToggle[0].refundedCount === 1 &&
+  Math.abs(totalsAfterToggle[0].refundedAmount - 4.4) < 1e-6 &&
+  Math.abs(totalsAfterToggle[0].pendingRefund - 5.5) < 1e-6,
+  'ATM monthTotals tracks pending vs refunded separately',
+  show(totalsAfterToggle[0])
+);
+const edited = updateWithdrawal(toggled, toggled[1].id, {
+  date: '2026-11-15', currency: 'EUR', amount: 100, atmFee: 10, homeCurrency: 'USD', rate: 1.1, cardFeePct: 0
+});
+assert(
+  edited[0].id === toggled[1].id && Math.abs(edited[0].refundHome - 11) < 1e-6,
+  'ATM updateWithdrawal updates amounts and resorts by date',
+  show(edited)
+);
+const summary = formatMonthSummaryText(
+  monthTotals(edited)[0],
+  'November 2026',
+  (n, c) => `${n.toFixed(2)} ${c}`,
+  { pending: 'Pending', refunded: 'Refunded', totalRefunds: 'Total refunds', feeLabel: 'fee' }
+);
+assert(summary.includes('November 2026') && summary.includes('[Refunded]') && summary.includes('[Pending]'), 'ATM summary text formatted', summary);
+assert(removeWithdrawal(edited, edited[0].id).length === 1, 'ATM withdrawal can be removed');
 
 console.log(`\n=== Feature Results: ${passed}/${total} Passed ===`);
 if (passed !== total) throw new Error(`Feature tests failed: ${passed}/${total}`);
