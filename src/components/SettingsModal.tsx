@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { StorageService } from '../services/storageService';
-import { Percent, ShieldAlert, Info, X, ArrowRightLeft, Languages, SunMoon, Share2, Star, MessageSquare, ShieldCheck, Compass, Heart } from 'lucide-react';
+import { Percent, Wallet, ShieldAlert, Info, X, ArrowRightLeft, Languages, SunMoon, Share2, Star, MessageSquare, ShieldCheck, Compass, Heart } from 'lucide-react';
 import { shareText, openStoreListing, sendFeedback, PLAY_URL } from '../services/appActions';
 import pkg from '../../package.json';
 import { useT, LANGS, Lang } from '../i18n';
 import { useTheme, THEME_MODES } from '../theme';
+import { ALL_CURRENCIES } from '../data/currencies';
+
+const FIAT = [...ALL_CURRENCIES].filter(c => c.type === 'fiat').sort((a, b) => a.code.localeCompare(b.code));
 
 const LANGUAGE_NAMES: Record<Lang, string> = { en: 'English', uk: 'Українська' };
 
@@ -13,6 +16,9 @@ interface SettingsModalProps {
   baseCurrency: string;
   onSelectBaseCurrency: (code: string) => void;
   bankFeePct: number;
+  /** The chosen home (card) currency, or '' to follow the base currency */
+  homeChoice: string;
+  onHomeChoiceChange: (code: string) => void;
   onBankFeeChange: (fee: number) => void;
   onClose: () => void;
   onResetDefaults: () => void;
@@ -24,6 +30,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   baseCurrency,
   onSelectBaseCurrency,
+  homeChoice,
+  onHomeChoiceChange,
   bankFeePct,
   onBankFeeChange,
   onClose,
@@ -176,6 +184,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {baseMeta.symbol}
               </span>
             </div>
+          </div>
+
+          {/* Home currency: the user's card currency, for Bank Fee, ATM refunds and the scanner */}
+          <div className="p-4 rounded-2xl bg-inset border border-line/[0.08] space-y-2">
+            <h3 className="text-sm font-bold text-ink flex items-center gap-1.5">
+              <Wallet className="w-4 h-4 text-accent" />
+              {t('settings.home')}
+            </h3>
+            <p className="text-xs text-muted">{t('settings.homeHint')}</p>
+            <select
+              value={homeChoice}
+              onChange={e => { StorageService.triggerHaptic(); onHomeChoiceChange(e.target.value); }}
+              aria-label={t('settings.home')}
+              className="w-full p-3 rounded-xl bg-inset border border-line/[0.08] text-sm font-bold text-ink focus:outline-none"
+            >
+              <option value="">{t('settings.homeSameAsBase', { code: baseCurrency })}</option>
+              {FIAT.map(c => <option key={'home-' + c.code} value={c.code}>{c.flag} {c.code} · {currency(c.code).name}</option>)}
+            </select>
           </div>
 
           {/* Bank Fee Configuration */}

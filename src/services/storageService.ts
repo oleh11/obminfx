@@ -10,7 +10,8 @@ const KEYS = {
   ACTIVE_SOURCE: 'app_active_source_v1',
   HAPTIC_ENABLED: 'app_haptic_enabled_v1',
   CUSTOM_SPREAD: 'custom_bank_spread_pct',
-  TOUR_SEEN: 'app_tour_seen_v1'
+  TOUR_SEEN: 'app_tour_seen_v1',
+  HOME_CURRENCY: 'app_home_currency_v1'
 };
 
 export const DEFAULT_FAVORITES = ['USD', 'EUR', 'UAH', 'CAD', 'GBP', 'VND', 'PLN', 'JPY'];
@@ -63,6 +64,23 @@ export class StorageService {
 
   static setBaseCurrency(code: string): void {
     localStorage.setItem(KEYS.BASE_CURRENCY, code);
+  }
+
+  /** The user's own currency (their card's), or '' to follow the Converter's base currency */
+  static getHomeCurrency(): string {
+    try {
+      const code = localStorage.getItem(KEYS.HOME_CURRENCY) || '';
+      return /^[A-Z]{3}$/.test(code) && !isExcludedCurrency(code) ? code : '';
+    } catch {
+      return '';
+    }
+  }
+
+  static setHomeCurrency(code: string): void {
+    try {
+      if (code) localStorage.setItem(KEYS.HOME_CURRENCY, code);
+      else localStorage.removeItem(KEYS.HOME_CURRENCY);
+    } catch {}
   }
 
   static getTargetCurrency(): string {

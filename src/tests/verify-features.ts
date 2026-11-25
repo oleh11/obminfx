@@ -4,6 +4,7 @@ import { ALL_CURRENCIES } from '../data/currencies';
 import { upsertCard, removeCard, rankCards } from '../services/cardsService';
 import { orderConverterCurrencies, pairCurrency } from '../services/converterOrder';
 import { parsePriceText, findPrices, detectCurrency, mergePrices } from '../services/priceScan';
+import { withdrawalCost, addWithdrawal, removeWithdrawal, monthTotals } from '../services/atmWithdrawals';
 
 let passed = 0;
 let total = 0;

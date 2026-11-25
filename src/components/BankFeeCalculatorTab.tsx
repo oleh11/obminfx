@@ -12,12 +12,15 @@ import { calculateBankFeeConversion, formatCurrencyAmount, formatRate } from '..
 import { StorageService } from '../services/storageService';
 import { CardCostEstimator } from './CardCostEstimator';
 import { CardsPanel } from './CardsPanel';
+import { AtmReimbursement } from './AtmReimbursement';
 import { SavedCard, loadCards, storeCards, upsertCard, removeCard } from '../services/cardsService';
 
 interface BankFeeCalculatorTabProps {
   rateData: ExchangeRateData | null;
   baseCurrency: string;
   targetCurrency: string;
+  /** The user's own (card) currency: what costs and refunds are shown in */
+  homeCurrency: string;
   bankFeePct: number;
   onBankFeeChange: (fee: number) => void;
   /** Text shared to the app (bank message): opens Check my card with it */
@@ -28,6 +31,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
   rateData,
   baseCurrency,
   targetCurrency,
+  homeCurrency,
   bankFeePct,
   onBankFeeChange,
   sharedText
@@ -35,8 +39,8 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
   const { t, locale, pct, currency } = useT();
   const [transactionAmount, setTransactionAmount] = useState<string>('100');
   const [transactionCurrency, setTransactionCurrency] = useState<string>(targetCurrency || 'EUR');
-  const [cardBillingCurrency, setCardBillingCurrency] = useState<string>(baseCurrency || 'USD');
-  const [mode, setMode] = useState<'simulate' | 'check'>(sharedText ? 'check' : 'simulate');
+  const [cardBillingCurrency, setCardBillingCurrency] = useState<string>(homeCurrency || 'USD');
+  const [mode, setMode] = useState<'simulate' | 'check' | 'atm'>(sharedText ? 'check' : 'simulate');
   const [cards, setCardsState] = useState<SavedCard[]>(loadCards);
   const setCards = (next: SavedCard[]) => { setCardsState(next); storeCards(next); };
 
@@ -44,8 +48,8 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
 
   // Currencies a bank message's card amount is likely in: saved cards first, then the user's own currencies
   const cardCurrencies = useMemo(
-    () => [...new Set([...cards.map(c => c.currency), baseCurrency, targetCurrency])],
-    [cards, baseCurrency, targetCurrency]
+    () => [...new Set([...cards.map(c => c.currency), homeCurrency, targetCurrency])],
+    [cards, homeCurrency, targetCurrency]
   );
   const knownCodes = useMemo(
     () => new Set([...ALL_CURRENCIES.map(c => c.code), ...Object.keys(rateData?.rates || {})]),
@@ -105,24 +109,26 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
       </div>
 
       {/* Mode switch: simulate a fee, or check what a real card payment cost */}
-      <div role="tablist" className="p-1 rounded-full bg-card/70 grid grid-cols-2 gap-1">
-        {(['simulate', 'check'] as const).map(m => (
+      <div role="tablist" className="p-1 rounded-full bg-card/70 grid grid-cols-3 gap-1">
+        {(['simulate', 'check', 'atm'] as const).map(m => (
           <button
             key={m}
             role="tab"
             aria-selected={mode === m}
             onClick={() => { StorageService.triggerHaptic(); setMode(m); }}
-            className={'py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ' + (mode === m ? 'bg-accent text-onaccent' : 'text-ink2')}
+            className={'py-2.5 px-1 rounded-full text-[13px] leading-tight font-bold transition-all ' + (mode === m ? 'bg-accent text-onaccent' : 'text-ink2')}
           >
-            {t(m === 'simulate' ? 'fee.modeSimulate' : 'fee.modeCheck')}
+            {t(m === 'simulate' ? 'fee.modeSimulate' : m === 'check' ? 'fee.modeCheck' : 'fee.modeAtm')}
           </button>
         ))}
       </div>
 
-      {mode === 'check' ? (
+      {mode === 'atm' ? (
+        <AtmReimbursement rateData={rateData} homeCurrency={homeCurrency} defaultCashCurrency={targetCurrency} />
+      ) : mode === 'check' ? (
         <CardCostEstimator
           defaultPurchaseCurrency={transactionCurrency}
-          homeCurrency={baseCurrency}
+          homeCurrency={homeCurrency}
           bankFeePct={bankFeePct}
           onUseAsFee={onBankFeeChange}
           cardCurrencies={cardCurrencies}
@@ -304,7 +310,7 @@ export const BankFeeCalculatorTab: React.FC<BankFeeCalculatorTabProps> = ({
         onUseCard={c => { setCardBillingCurrency(c.currency); onBankFeeChange(Math.round(c.feePct * 10) / 10); }}
         amount={amountNum}
         purchaseCurrency={transactionCurrency}
-        compareCurrency={baseCurrency}
+        compareCurrency={homeCurrency}
         rateData={rateData}
       />
       </>)}

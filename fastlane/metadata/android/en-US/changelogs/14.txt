@@ -1,0 +1,2 @@
+* New ATM tab in Bank Fee: see what a cash withdrawal costs and how much of the ATM fee your card should refund, with a monthly total
+* Home currency in Settings: show costs and refunds in your card's currency

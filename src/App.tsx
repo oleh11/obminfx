@@ -37,6 +37,9 @@ export const App: React.FC = () => {
 
   // App core conversion states
   const [baseCurrency, setBaseCurrency] = useState<string>(() => StorageService.getBaseCurrency() || 'USD');
+  // The user's own (card) currency for Bank Fee, ATM refunds and the scanner; follows the base when not set
+  const [homeChoice, setHomeChoice] = useState<string>(() => StorageService.getHomeCurrency());
+  const homeCurrency = homeChoice || baseCurrency;
   // Pair opened from a converter card; doesn't change the saved base currency
   const [trendsPair, setTrendsPair] = useState<{ from: string; to: string } | null>(null);
   const [baseAmount, setBaseAmount] = useState<string>('100.00');
@@ -158,6 +161,8 @@ export const App: React.FC = () => {
     StorageService.setBankFeePct(2.0);
     setBaseCurrency('USD');
     StorageService.setBaseCurrency('USD');
+    setHomeChoice('');
+    StorageService.setHomeCurrency('');
     setActiveSourceId('ecb');
     StorageService.setActiveSource('ecb');
     loadRates('ecb', true);
@@ -209,6 +214,7 @@ export const App: React.FC = () => {
           <BankFeeCalculatorTab
             rateData={rateData}
             baseCurrency={baseCurrency}
+            homeCurrency={homeCurrency}
             targetCurrency={targetCurrency}
             bankFeePct={bankFeePct}
             onBankFeeChange={handleBankFeeChange}
@@ -277,6 +283,8 @@ export const App: React.FC = () => {
         isOpen={isSettingsModalOpen}
         baseCurrency={baseCurrency}
         onSelectBaseCurrency={handleSelectBaseCurrency}
+        homeChoice={homeChoice}
+        onHomeChoiceChange={code => { setHomeChoice(code); StorageService.setHomeCurrency(code); }}
         bankFeePct={bankFeePct}
         onBankFeeChange={handleBankFeeChange}
         onClose={() => setIsSettingsModalOpen(false)}
@@ -289,7 +297,7 @@ export const App: React.FC = () => {
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         rateData={rateData}
-        homeCurrency={baseCurrency}
+        homeCurrency={homeCurrency}
         defaultPriceCurrency={targetCurrency}
         currencyCodes={scannerCurrencies}
         bankFeePct={bankFeePct}
